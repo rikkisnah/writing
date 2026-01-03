@@ -1,0 +1,31 @@
+https://lnkd.in/p/gvtkmXSw
+
+From AI infra perspective: Why NVIDIA’s $5B bet on Intel is bigger than fabs
+
+📌 The fact:
+NVIDIA just put $5 billion into Intel (~4% stake) and announced co-development of custom x86 CPUs and PC/AI platforms
+(press release).
+
+This is more than a manufacturing hedge — it’s about bridging the deepest gap in AI infrastructure.
+
+🔍 My thinking:
+
+1️⃣ GPU vs CPU memory fabrics
+NVLink meshes GPU memory.
+RDMA/InfiniBand (and now Enfabrica’s superNICs) mesh CPU memory.
+What separates them? PCIe. And Intel CPUs own the strongest PCIe root complex (RC), with cache-coherence built in. That makes Intel the natural bridge between GPU and CPU fabrics.
+
+2️⃣ From NVLink CC to PCIe
+In GB200/GB300 Arm-based systems, NVIDIA uses NVLink CC (cache coherent) to unify CPU+GPU. But overlaying that onto PCIe with RDMA cards isn’t straightforward on Arm.
+The recent 48-lane x8 PCIe design in GB systems is powerful — but not as elegant as NVIDIA envisioned. Intel’s x86 IP and coherence experience are the missing link — just as Mellanox once brought RDMA and collectives into the NVLink ecosystem.
+
+3️⃣ NVIDIA was a chipset company
+NVIDIA started life as a chipset player. After its legal settlement with Intel, it effectively stepped away from the x86 chipset business.
+NVLink thrives in Arm systems — but in x86, NVIDIA may need to return to its origin. By partnering with Intel, it could be preparing to reboot its chipset role inside x86 systems.
+The big question: what role will NVLink logic play inside future x86 CPUs?
+
+What to expect next?
+ • x86-based GB-style combo systems — inference monsters, leveraging x86 memory systems + PCIe cache coherence.
+ • Potential convergence of CXL + NVLink CC — a new, cache-coherent “PCIe++” fabric for the AI era.
+
+NVIDIA isn’t just hedging fabs. It’s reshaping the memory backbone of x86 AI systems.

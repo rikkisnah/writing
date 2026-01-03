@@ -1,0 +1,1499 @@
+#!/bin/bash
+
+# NVIDIA_COPYRIGHT_BEGIN
+#
+# Copyright 2017-2025 by NVIDIA Corporation.  All rights reserved.  All
+# information contained herein is proprietary and confidential to NVIDIA
+# Corporation.  Any use, reproduction, or disclosure without the written
+# permission of NVIDIA Corporation is prohibited.
+#
+# NVIDIA_COPYRIGHT_END
+
+set -eEuo pipefail
+
+# Global variables
+# Don't move below (PRODUCT_NAME, PACKAGE_NAME, PACKAGE_TYPE) anywhere else
+PRODUCT_NAME="blackwell-hgx-8-gpu"
+PACKAGE_NAME="629-26287-0105-FLD-50761"
+PACKAGE_TYPE="fielddiag"
+
+# Change the output of help messages in different situation
+# all:         Support both --mfg and --field
+# partner_mfg: Support --mfg only
+# field:       Support --field only
+RELEASE_TYPE="all"
+
+# Hidden GPU-related help messages in CPU only product
+CPU_ONLY=false
+
+LEVEL_1_TESTS=false
+LEVEL_2_TESTS=false
+IST_TESTS=false
+LOGIC=false
+SRAM=false
+DRAM=false
+RUN_GPU_FD=false
+RUN_ON_ERROR=false
+USE_SPEC_FILE=true
+DIAG_OS=false
+IS_SWITCH_OS=false
+EXTRA_ARGS=()
+TEST_CATEGORIES=()
+SPECIFIC_TEST_TO_RUN=""
+SPECIFIC_TESTS_TO_SKIP=""
+SPECIFIC_TESTS_TO_UNSKIP=""
+HGX_PRODUCT=false
+SKU_JSON_FILE=""
+TESTARGS_FILE=""
+FORCE_PRODUCT_NAME=""
+FORCE_BASEBOARD=""
+FORCE_CHASSIS=""
+UPDATE_1=false
+NO_BMC=false
+SKIP_DRIVER_LOAD=false
+SKIP_FFA_VERIFY=false
+SKIP_CLINK_MODULE_INSTALL=false
+UNLOAD_MODS_DRIVER_BEFORE_FLASH=false
+SKIP_UPLOAD=false
+SKIP_TRUNK_LINKS=false
+DIAG_PATH=false
+LOCKDOWN=false
+PEX_NO_GEN6=false
+PARTNER_EXTRA_LOGGING_MS=''
+PARTNER_EXTRA_LOGGING=""
+OUTPUT_LOG_DIR=""
+GPU_FD_ARGS=""
+SKU_NAME=""
+RUN_SPEC=""
+ARM_FFA_SRC=""
+GPU_FD_EXTRA_ARGS=""
+GPU_FD_PEX_LINK_AUTO=false
+IS_MULTINODE_PRODUCT=false
+PRIMARY_DIAG_IP_SET=false
+GDM_FD_SET=false
+ENABLE_DRA=false
+ENABLE_DRA_BY_DEFAULT=false
+GLOBAL_DRA_SERVER_PORT=0
+USE_PLATFORM_RESET=false
+LOOPBACK_IP=""
+DRA_SERVER_PORT=0
+DRA_CLIENT_FD=""
+IS_MANAGED_MODE=false
+NUM_NODES_TO_CONNECT=""
+SKINNY_JOE_PRODUCT_NAME='gh200_x4'
+MERLIN_PRODUCT_NAME='c2'
+LEGO_C2_PRODUCT_NAME='mgx_c2'
+STARSHIP_PRODUCT_NAME='gh200'
+VULCANNEXT_PRODUCT_NAME='blackwell-hgx-8-gpu'
+DGXH100NEXT_PRODUCT_NAME='blackwell-dgx-8-gpu'
+GB200_NVL_2_2_PRODUCT_NAME='gb200_nvl_2_2_board_pc'
+GB200_NVL_2_4_PRODUCT_NAME='gb200_nvl_2_4_board_pc'
+GB200_NVL_72_2_4_RACK_PRODUCT_NAME="gb200_nvl_72_2_4"
+GB200_NVL_72_2_2_RACK_PRODUCT_NAME="gb200_nvl_72_2_2"
+GB200NVL_SWITCH_TRAY_PRODUCT_NAME='gb200nvl_switch_tray'
+ALON_PRODUCT_NAME='cx8aas'
+PACKAGE_TYPE_FIELD_DIAG="fielddiag"
+PACKAGE_TYPE_THERMAL_DATA_COLLECTION="thermaldatacollection"
+FD_MAIN=""
+DISABLE_AUTO_REPAIR=false
+AUTO_REPAIR_SUPPORTED=true
+USE_POST_RESET_DELAY=false
+POST_RESET_DELAY_MS=""
+SKIP_DISK_SPACE_CHECK=false
+ENABLE_CORE_DUMP=false
+ENABLE_FAULTHANDLER=false
+SRC_DIR=""
+OUTPUT_TRAY_BOARD_SERIAL=false
+NVL4_PRODUCT_NAME='dgx_nvl_4'
+
+VULCANNEXT_SKU_NAME='g525sku0220'
+GB200_NVL_SKU_NAME='g548sku0201'
+
+OPT_PARTNER_MFG="--mfg"
+OPT_PARTNER_FIELD="--field"
+
+GDM_HANDSHAKE_TIMEOUT_SECS="300"
+
+PIPED_PROCESS_PID=
+
+if [[ $(id -u) -eq 0 || -z $(which sudo) ]]; then
+    sudo()
+    {
+        "$@"
+    }
+fi
+
+# Set HGX product based on product name
+if [[ "$PRODUCT_NAME" == "$SKINNY_JOE_PRODUCT_NAME" || \
+      "$PRODUCT_NAME" == "$MERLIN_PRODUCT_NAME" || \
+      "$PRODUCT_NAME" == "$LEGO_C2_PRODUCT_NAME" || \
+      "$PRODUCT_NAME" == "$STARSHIP_PRODUCT_NAME" || \
+      "$PRODUCT_NAME" == "$VULCANNEXT_PRODUCT_NAME" || \
+      "$PRODUCT_NAME" == "$DGXH100NEXT_PRODUCT_NAME" || \
+      "$PRODUCT_NAME" == "$GB200_NVL_2_4_PRODUCT_NAME" || \
+      "$PRODUCT_NAME" == "$GB200_NVL_2_2_PRODUCT_NAME" || \
+      "$PRODUCT_NAME" == "$GB200NVL_SWITCH_TRAY_PRODUCT_NAME" || \
+      "$PRODUCT_NAME" == "$NVL4_PRODUCT_NAME" ]]; then
+    HGX_PRODUCT=true
+fi
+
+if [[ "$PRODUCT_NAME" == "$SKINNY_JOE_PRODUCT_NAME" ]]; then
+    FORCE_PRODUCT_NAME="skinny_joe"
+    AUTO_REPAIR_SUPPORTED=false
+fi
+
+if [[ "$PRODUCT_NAME" == "$MERLIN_PRODUCT_NAME" ]]; then
+    FORCE_PRODUCT_NAME="merlin"
+    AUTO_REPAIR_SUPPORTED=false
+fi
+
+if [[ "$PRODUCT_NAME" == "$LEGO_C2_PRODUCT_NAME" ]]; then
+    FORCE_PRODUCT_NAME="lego_c2"
+    AUTO_REPAIR_SUPPORTED=false
+fi
+
+if [[ "$PRODUCT_NAME" == "$STARSHIP_PRODUCT_NAME" ]]; then
+    FORCE_PRODUCT_NAME="starship"
+    AUTO_REPAIR_SUPPORTED=false
+fi
+
+if [[ "$PRODUCT_NAME" == "$GB200_NVL_2_4_PRODUCT_NAME" ]]; then
+    FORCE_PRODUCT_NAME="titania_gb"
+    ENABLE_DRA_BY_DEFAULT=true
+    USE_POST_RESET_DELAY=true
+fi
+
+if [[ "$PRODUCT_NAME" == "$GB200_NVL_2_2_PRODUCT_NAME" ]]; then
+    FORCE_PRODUCT_NAME="titania_ariel"
+    ENABLE_DRA_BY_DEFAULT=true
+    USE_POST_RESET_DELAY=true
+fi
+
+if [[ "$PRODUCT_NAME" == "$GB200_NVL_72_2_4_RACK_PRODUCT_NAME" ]]; then
+    FORCE_PRODUCT_NAME="oberon_gb"
+    IS_MULTINODE_PRODUCT=true
+    ENABLE_DRA_BY_DEFAULT=true
+    USE_POST_RESET_DELAY=true
+fi
+
+if [[ "$PRODUCT_NAME" == "$GB200_NVL_72_2_2_RACK_PRODUCT_NAME" ]]; then
+    FORCE_PRODUCT_NAME="oberon_ariel"
+    IS_MULTINODE_PRODUCT=true
+    ENABLE_DRA_BY_DEFAULT=true
+    USE_POST_RESET_DELAY=true
+fi
+
+if [[ "$PRODUCT_NAME" == "$VULCANNEXT_PRODUCT_NAME" ]]; then
+    FORCE_PRODUCT_NAME="vulcannext"
+    ENABLE_DRA_BY_DEFAULT=true
+fi
+
+if [[ "$PRODUCT_NAME" == "$DGXH100NEXT_PRODUCT_NAME" ]]; then
+    FORCE_PRODUCT_NAME="dgxh100next"
+    FORCE_BASEBOARD="vulcannext"
+    ENABLE_DRA_BY_DEFAULT=true
+fi
+
+if [[ "$PRODUCT_NAME" == "$GB200NVL_SWITCH_TRAY_PRODUCT_NAME" ]]; then
+    FORCE_PRODUCT_NAME="juliet_ferdinand"
+    IS_SWITCH_OS=true
+    ENABLE_DRA_BY_DEFAULT=true
+    AUTO_REPAIR_SUPPORTED=false
+fi
+
+if [[ "$PRODUCT_NAME" == "$ALON_PRODUCT_NAME" ]]; then
+    FORCE_PRODUCT_NAME="alon"
+fi
+
+if [[ "$PRODUCT_NAME" == "$GB200_NVL_2_4_PRODUCT_NAME" || \
+      "$PRODUCT_NAME" == "$GB200_NVL_2_2_PRODUCT_NAME" ]]; then
+    OUTPUT_TRAY_BOARD_SERIAL=true
+fi
+
+if [[ "$PRODUCT_NAME" == "$NVL4_PRODUCT_NAME" ]]; then
+    # nvl4 takes the same HW will GB200 L10, use the same product name temporarily
+    FORCE_PRODUCT_NAME="nvl4"
+    AUTO_REPAIR_SUPPORTED=false
+fi
+
+main()
+{
+    # Find the current directory of partnerdiag
+    find_src_dir
+
+    # Set FD_MAIN based on SRC_DIR
+    set_fd_main
+
+    cleanup_logging
+
+    # Log command line arguments
+    echo "Command Line: $0 $@" >> $SRC_DIR/fieldiag.log
+
+    # Unpack onediag
+    unpack_onediag
+
+    # Check for Diag OS
+    detect_diag_os
+
+    # Parse args
+    parse_args "$@"
+
+    # Check for sufficient space
+    [[ $SKIP_DISK_SPACE_CHECK == true ]] || check_free_space
+
+    # Check for sudo privileges. Only a warning
+    check_sudo_privileges
+
+    # Cleanup is needed only after setup
+    trap cleanup EXIT
+
+    # Run the OneDiagfield test(s)
+    run_onediagfield_tests $(find_fieldiag_package)
+
+    # Run the GPU field diag test(s)
+    run_gpufieldiag_tests
+}
+
+unpack_onediag()
+{
+    local FIELDIAG_PACKAGE=$(find_fieldiag_package ".tgz" 2>&1)
+
+    if [[ "$FIELDIAG_PACKAGE" =~ .*ERROR.* ]]; then
+        echo "ERROR: No Field Diag package found. Please check your environment"
+        exit 1
+    fi
+
+    local FIELDIAG=${FIELDIAG_PACKAGE%.tgz}
+    for FILE in $(ls "$SRC_DIR"); do
+        if [[ "$FILE" == "$FIELDIAG" ]]; then
+            # Found onediag field launch script so onediag has already been unpacked
+            return
+        fi
+    done
+
+    echo "Unpacking onediag... "
+    tar xf "$SRC_DIR/$FIELDIAG_PACKAGE" --directory=$SRC_DIR
+}
+
+cleanup_logging()
+{
+    local INFO_STR="field diagnostics"
+    [[ "$PACKAGE_TYPE" == "$PACKAGE_TYPE_THERMAL_DATA_COLLECTION" ]] && INFO_STR="thermal stress diagnostics"
+    echo "Launching $INFO_STR ..." > $SRC_DIR/fieldiag.log
+}
+
+check_element_in_array()
+{
+    local ELEMENT=$1
+    shift
+    local ARRAY=("$@")
+    local VAR
+
+    for VAR in "${ARRAY[@]}"; do
+        if [[ "$VAR" == "$ELEMENT" ]]; then
+            return 0
+        fi
+    done
+    return 1
+}
+
+is_gpu_fielddiag_supported()
+{
+    if [[ $HGX_PRODUCT = true ]] && [[ "$PACKAGE_TYPE" == "$PACKAGE_TYPE_FIELD_DIAG" ]]; then
+        return 0
+    fi
+    return 1;
+}
+
+is_testargs_supported()
+{
+    local TESTARGS_SUPPORTED_PRODUCTS=(
+
+    )
+    if check_element_in_array "$PRODUCT_NAME" "${TESTARGS_SUPPORTED_PRODUCTS[@]}"; then
+        return 0
+    fi
+    return 1
+}
+
+is_override_topology_option_supported()
+{
+    local OVERRIDE_TOPOLOGY_SUPPORTED=(
+    )
+    if check_element_in_array "$PRODUCT_NAME" "${OVERRIDE_TOPOLOGY_SUPPORTED[@]}"; then
+        return 0
+    fi
+    return 1
+}
+
+detect_diag_os()
+{
+    local DIAG_OS_FILE="/etc/dgx-release"
+    if [[ $HGX_PRODUCT == true ]]; then
+        DIAG_OS_FILE="/etc/release"
+        if [[ -f $DIAG_OS_FILE ]]; then
+            DIAG_OS=true
+        fi
+    else
+        local DIAG_OS_STR
+        if [[ -f $DIAG_OS_FILE ]]; then
+            DIAG_OS_STR=`grep "DGX_NAME=" $DIAG_OS_FILE`
+
+            if [[ "$DIAG_OS_STR" == "DGX_NAME=\"DGX DIAGOS\"" ]]; then
+                DIAG_OS=true
+            fi
+        fi
+    fi
+}
+
+check_free_space()
+{
+    # Get the available space in KB
+    local AVAIL_KB=`df $(pwd) -B 1K -P | tail -1 | awk '{print $4}'`
+    # We need 75MB space as logs take about 45MB and compressed logs take about 15MB and we are adding 25% guard band
+    local REQ_KB="76800" # 76800 KB = 75 MB
+    local NO_SPACE=false
+
+    if [[ "$AVAIL_KB" -lt "$REQ_KB" ]]; then
+        NO_SPACE=true
+    fi
+
+    if [[ $DIAG_OS == true && $HGX_PRODUCT == false ]]; then
+        if `echo $(pwd) | grep "^/var/diags" > /dev/null`; then
+            if [[ $NO_SPACE == true ]]; then
+                echo "Insufficient space in /var/diags. Please reboot to production OS Mode, clean up at least 75MB and retry"
+                exit 1
+            fi
+        else
+            echo "Please run field diags from /var/diags folder"
+            exit 1
+        fi
+    else
+        if [[ $NO_SPACE == true ]]; then
+            echo "Insufficient disk space. Please free up at least 75MB and retry"
+            exit 1
+        fi
+    fi
+}
+
+check_sudo_privileges()
+{
+    if [[ $EUID -ne 0 ]]; then
+        echo "Warning: Partnerdiag is not running with sudo privileges. Some tests may fail." | tee -a "$SRC_DIR/fieldiag.log"
+    fi
+}
+
+find_fieldiag_package()
+{
+    # Optional 1st argument passed contains the .tgz extension
+    local COUNT=0
+    local FIELDIAG=""
+    local EXT=${1:-""}
+    for FILE in $(ls "$SRC_DIR"); do
+        if [[ "$FILE" =~ ^[dh]gxfieldiag(\-|\.r[0-9]+\.)[0-9.]+$EXT$ || "$FILE" =~ ^onediagfield(\-|\.r[0-9]+\.)[0-9.]+$EXT$ ||
+              "$FILE" =~ ^onediagfieldmn(\-|\.r[0-9]+\.)[0-9.]+$EXT$ ]]; then
+            FIELDIAG="$FILE"
+            COUNT=$(($COUNT + 1))
+        fi
+    done
+    if [[ $COUNT -eq 0 ]]; then
+        echo "ERROR: No fieldiag package found!" >&2
+    elif [[ $COUNT -gt 1 ]]; then
+        echo "ERROR: More than one fieldiag packages found!" >&2
+    else
+        echo $FIELDIAG
+    fi
+}
+
+find_src_dir()
+{
+    SRC_DIR="$(dirname "$0")"
+    if [ -z $SRC_DIR ]; then
+        SRC_DIR="$(basename "$0")"
+        SRC_DIR="$(which "$SRC_DIR")"
+        SRC_DIR="$(dirname "$SRC_DIR")"
+    fi
+    # Get absolute path of SRC_DIR
+    SRC_DIR=$(readlink -f "$SRC_DIR")
+}
+
+set_fd_main()
+{
+    FD_MAIN=$( [[ -f "$SRC_DIR/fdmain_onediag.sh" ]] && echo "fdmain_onediag.sh" || echo "fdmain.sh" )
+}
+
+find_module()
+{
+    lsmod | grep -v grep | grep -q "$1"
+}
+
+unload_module()
+{
+    local NUM_RETRIES=1
+    while find_module "$1" && [[ $NUM_RETRIES -le 5 ]]; do
+        sudo rmmod "$1"
+        sleep 1
+        NUM_RETRIES=$(($NUM_RETRIES + 1))
+    done
+}
+
+show_usage_and_exit()
+{
+    local USAGE_STR="Usage: `basename $0` [--help]"
+    local MSG_STR_ARRAY=("--help                 : Print command related help")
+
+    if [[ $RELEASE_TYPE == "partner_mfg" ]]; then
+        USAGE_STR="$USAGE_STR [$OPT_PARTNER_MFG]"
+    elif [[ $RELEASE_TYPE == "field" ]]; then
+        USAGE_STR="$USAGE_STR [$OPT_PARTNER_FIELD]"
+    else
+        USAGE_STR="$USAGE_STR [$OPT_PARTNER_MFG/$OPT_PARTNER_FIELD]"
+    fi
+
+    USAGE_STR="$USAGE_STR [--run_spec=<absolute path to filename>]"
+
+    if [[ $RELEASE_TYPE != "field" ]]; then
+        MSG_STR_ARRAY+=("$OPT_PARTNER_MFG                  : Run the Partner Mfg Diag")
+    fi
+
+    MSG_STR_ARRAY+=("  --run_spec           : Run with specified spec file")
+
+    if [[ $RELEASE_TYPE != "partner_mfg" ]]; then
+        MSG_STR_ARRAY+=("$OPT_PARTNER_FIELD                : Run the Field Diag")
+    fi
+
+    if [[ $HGX_PRODUCT == true ]]; then
+        if [[ $CPU_ONLY == true ]]; then
+            USAGE_STR="$USAGE_STR [--level2]"
+            MSG_STR_ARRAY+=("  --level2             : [Field only] Run Level 2 tests")
+        elif [[ $RELEASE_TYPE != "partner_mfg" ]]; then
+            USAGE_STR="$USAGE_STR [--level1] [--level2] [--ist]"
+            MSG_STR_ARRAY+=("  --level1             : [Field only] Run Level 1 tests")
+            MSG_STR_ARRAY+=("  --level2             : [Field only] Run Level 2 tests")
+            MSG_STR_ARRAY+=("  --ist                : [Field only] Run IST tests")
+            USAGE_STR="$USAGE_STR [--logic] [--sram] [--dram]"
+            MSG_STR_ARRAY+=("    --logic            : [IST only] Run logic tests")
+            MSG_STR_ARRAY+=("    --sram             : [IST only] Run SRAM tests")
+            MSG_STR_ARRAY+=("    --dram             : [IST only] Run DRAM tests")
+            if is_gpu_fielddiag_supported; then
+                USAGE_STR="$USAGE_STR [--gpufielddiag] [--gpu_fd_args]"
+                MSG_STR_ARRAY+=("  --gpufielddiag         : [Field only] Run the GPU Field Diag tests")
+                MSG_STR_ARRAY+=("  --gpu_fd_args          : [GPU FD only] GPU Field Diag args. Refer to GPU Field Diag user guide for arguments info")
+                MSG_STR_ARRAY+=("  --gpu_fd_pex_link_auto : [GPU FD only] Don't force PCIe gen speed and link width")
+            fi
+        fi
+        USAGE_STR="$USAGE_STR [--skip_os_check]"
+        MSG_STR_ARRAY+=("--skip_os_check        : Skips OS check before running tests")
+    else
+        if [[ $RELEASE_TYPE != "partner_mfg" ]]; then
+            if is_gpu_fielddiag_supported; then
+                USAGE_STR="$USAGE_STR [--gpufielddiag] [--gpu_fd_args]"
+                MSG_STR_ARRAY+=("  --gpufielddiag         : [Field only] Run the GPU Field Diag tests")
+                MSG_STR_ARRAY+=("  --gpu_fd_args          : [GPU FD only] GPU Field Diag args. Refer to GPU Field Diag user guide for arguments info")
+                MSG_STR_ARRAY+=("  --gpu_fd_pex_link_auto : [GPU FD only] Don't force PCIe gen speed and link width")
+            fi
+        fi
+    fi
+
+    USAGE_STR="$USAGE_STR [--no_bmc] [--fail_on_first_error] [--arm_ffa_src=<absolute path to filename>]"
+    MSG_STR_ARRAY+=("--no_bmc                           : Run diag without any bmc related tasks")
+    MSG_STR_ARRAY+=("--fail_on_first_error              : Run all tests and fail on the first failure encountered")
+    MSG_STR_ARRAY+=("--arm_ffa_src                      : Source path for driver Arm Firmware Framework for Arm A-profile")
+    MSG_STR_ARRAY+=("--skip_ffa_verify                  : Skip verifying if the ffa module is installed on the system")
+    MSG_STR_ARRAY+=("--skip_clink_module_install        : Skip installing the clink module")
+    MSG_STR_ARRAY+=("--skip_driver_load                 : Use drivers pre-packaged in the system")
+    MSG_STR_ARRAY+=("--unload_mods_driver_before_flash  : Unload mods driver before running Nvflash commands")
+    MSG_STR_ARRAY+=("--lockdown                         : Notify diag that kernel is in lockdown")
+    MSG_STR_ARRAY+=("--log <LOG_DIR>                    : Output log files into a specified folder instead of the default location")
+    MSG_STR_ARRAY+=("--run_on_error                     : Run all tests even if some of them fail")
+    MSG_STR_ARRAY+=("--use_platform_reset               : Use os-configured gpu reset method instead of FLR")
+
+    MSG_STR_ARRAY+=("--pex_no_gen6                              : Skip Gen6 check for systems that advertise Gen6 but cannot transition to Gen6")
+
+    USAGE_STR="$USAGE_STR [--partner_extra_logging=<power/thermal/voltage/clock>]"
+    MSG_STR_ARRAY+=("--partner_extra_logging : Run partnerdiag with power, thermal, voltage or clock logged. Logging interval will be default to 500ms. Example usage: --partner_extra_logging=thermal,clock")
+
+    USAGE_STR="$USAGE_STR [--partner_extra_logging_ms=<poll interval in ms>]"
+    MSG_STR_ARRAY+=("--partner_extra_logging_ms : Run partnerdiag with power, thermal, voltage or clock logged at user specified interval measured in ms. The logging interval is the period at which the partnerdiag will poll the system for additional logging. Default is 500ms. Must be above 100ms.")
+
+    if is_override_topology_option_supported; then
+        USAGE_STR="$USAGE_STR [--override_topology=<absolute path to filename>]"
+        MSG_STR_ARRAY+=("--override_topology    : topology file name. Use absolute path for custom topologies")
+    fi
+
+    if [[ "$IS_MULTINODE_PRODUCT" == true ]]; then
+        USAGE_STR="$USAGE_STR [--primary_diag_ip=<Primary Diag IP>|--gdm_fd=<@socketfd|/path/to/unixsocket>]"
+        USAGE_STR="$USAGE_STR [--topology=<NVLink Topology JSON File>]"
+        USAGE_STR="$USAGE_STR [--diag_path=<Remote Path of Diag Package>] [--skip_upload]"
+        USAGE_STR="$USAGE_STR [--num_nodes_to_connect=<total_number_of_nodes>]"
+        USAGE_STR="$USAGE_STR [--managed_mode]"
+        USAGE_STR="$USAGE_STR [--failure_summary]"
+        MSG_STR_ARRAY+=("--primary_diag_ip      : IP address of the system where primary diag is launched (MN exlcusive)")
+        MSG_STR_ARRAY+=("--topology             : Path to NVLink topology json file")
+        MSG_STR_ARRAY+=("--gdm_fd               : Socket fd where the GDM listens (primary) or connects to (secondary) (MN exlcusive)")
+        MSG_STR_ARRAY+=("--num_nodes_to_connect : Total number of nodes the diag is running on (MN exlcusive)")
+        MSG_STR_ARRAY+=("--managed_mode         : Executes the diag in managed mode (Default self hosted mode) (MN exlcusive)")
+        MSG_STR_ARRAY+=("--diag_path            : Remote Path of the Diag Package (MN exlcusive)")
+        MSG_STR_ARRAY+=("--skip_upload          : Skip uploading the package to remote (MN exlcusive)")
+        MSG_STR_ARRAY+=("--skip_trunk_links     : Create config to skip trunk links stress during Nvlink BW Stress test")
+        MSG_STR_ARRAY+=("--failure_summary      : Postprocess diag results and generate failure summary")
+        MSG_STR_ARRAY+=("--gdm_handshake_timeout_secs : Timeout value passed to GDM as startup_delay")
+    fi
+
+    USAGE_STR="$USAGE_STR [--sku=<skuname>]"
+    MSG_STR_ARRAY+=("--sku                  : Specify SKU info when load spec file")
+
+    if is_testargs_supported; then
+        USAGE_STR="$USAGE_STR [--testargs=<filename>]"
+        MSG_STR_ARRAY+=("--testargs             : Run diag with the specified testargs file")
+    fi
+
+    if [[ $ENABLE_DRA_BY_DEFAULT == true ]]; then
+        USAGE_STR="$USAGE_STR [--disable_dra]"
+        MSG_STR_ARRAY+=("--disable_dra          : Disable DRA analysis")
+    else
+        USAGE_STR="$USAGE_STR [--dra]"
+        MSG_STR_ARRAY+=("--dra                  : Enable DRA analysis")
+    fi
+    USAGE_STR="$USAGE_STR [--global_dra_server_port=<DRA server port> | --dra_client_fd=<@socketfd|/path/to/unixsocket>]"
+    MSG_STR_ARRAY+=("--global_dra_server_port : Set global DRA server to run on a specific port")
+    MSG_STR_ARRAY+=("--dra_client_fd          : Socket fd where the DRA connects to")
+
+    USAGE_STR="$USAGE_STR [--dra_server_port=<DRA server port>]"
+    MSG_STR_ARRAY+=("--dra_server_port      : Set DRA server to run on a specific port")
+
+    USAGE_STR="$USAGE_STR [--loopback_ip=<ip>]"
+    MSG_STR_ARRAY+=("--loopback_ip          : Set loopback IP for DRA's and GDM's IP address. If this option is not set, the IP will be obtained dynamically")
+
+    USAGE_STR="$USAGE_STR [--disable_auto_repair]"
+    MSG_STR_ARRAY+=("--disable_auto_repair  : Disable automatic repair")
+
+    USAGE_STR="$USAGE_STR [--test=<test1,test2>]"
+    USAGE_STR="$USAGE_STR [--skip_tests=<test1,test2>]"
+    USAGE_STR="$USAGE_STR [--unskip_tests=<test1,test2>]"
+    MSG_STR_ARRAY+=("--test                 : Run the test(s) with the specified virtual id, with multiple tests specified by commas")
+    MSG_STR_ARRAY+=("--skip_tests           : Skip test(s) with specified virtual id(s). To skip multiple tests, provide comma separated virtual ids")
+    MSG_STR_ARRAY+=("--unskip_tests         : Unskip test(s) that are normally skipped in spec files. To unskip multiple tests, provide comma separated virtual ids")
+
+    if [[ $USE_POST_RESET_DELAY == true ]]; then
+        USAGE_STR="$USAGE_STR [--post_reset_delay_ms=<time for delay>]"
+        MSG_STR_ARRAY+=("--post_reset_delay_ms  : Time to delay between reset and polling config space")
+    fi
+
+    USAGE_STR="$USAGE_STR [--skip_disk_space_check]"
+    MSG_STR_ARRAY+=("--skip_disk_space_check  : Skip checking the disk space requirement")
+
+    echo $USAGE_STR
+
+    for ((i = 0; i < ${#MSG_STR_ARRAY[@]}; i++))
+    do
+        echo "${MSG_STR_ARRAY[$i]}"
+    done
+
+    exit $1
+}
+
+setup_one_diag_env()
+{
+    local FIELDIAG=$(find_fieldiag_package)
+    local SETUP_EXIT_STATUS=0
+    local LOG_PATH=${1:-""}
+    local SETUP_ENV_ARGS=("--setup_env_only")
+    [[ -z $LOG_PATH ]] || SETUP_ENV_ARGS+=(--log="$LOG_PATH/setup_env")
+    "$SRC_DIR/$FIELDIAG" "${EXTRA_ARGS[@]}" "${SETUP_ENV_ARGS[@]}" || SETUP_EXIT_STATUS=$?
+    if [[ "$SETUP_EXIT_STATUS" -ne 0 ]]; then
+        echo "ERROR: Failed to unload nvidia drivers and setup environment. Check unloadnvidiamodule.log for details"
+        exit "$SETUP_EXIT_STATUS"
+    fi
+}
+
+parse_args()
+{
+    local NVLINK_TOPOLOGY=""
+
+    if [[ "$HGX_PRODUCT" == true ]]; then
+        RUN_ON_ERROR=true
+    fi
+
+    if [[ "$FORCE_BASEBOARD" != "" ]]; then
+        EXTRA_ARGS+=("--force_baseboard=$FORCE_BASEBOARD")
+    fi
+
+    if [[ "$FORCE_CHASSIS" != "" ]]; then
+        EXTRA_ARGS+=("--force_chassis=$FORCE_CHASSIS")
+    fi
+
+    if [[ $ENABLE_DRA_BY_DEFAULT == true ]]; then
+        ENABLE_DRA=true
+    fi
+
+    RUN_PARTNER_MFG=false
+    RUN_FIELDIAG=false
+    local set_fail_on_first_error=false
+    local set_run_on_error=false
+
+    while [[ $# > 0 && -n $1 ]]; do
+        case $1 in
+            --gpufielddiag)
+                is_gpu_fielddiag_supported || show_usage_and_exit 1
+                RUN_GPU_FD=true ;;
+            --gpu_fd_args=*)
+                is_gpu_fielddiag_supported || show_usage_and_exit 1
+                GPU_FD_ARGS="${1#*=}"
+                if [[ "$GPU_FD_ARGS" =~ "logfilename=" ]]; then
+                    echo "ERROR: Use --log to configure log path instead of --gpu_fd_args"
+                    echo ""
+                    show_usage_and_exit 1
+                fi
+                ;;
+            --gpu_fd_pex_link_auto)
+                GPU_FD_PEX_LINK_AUTO=true;;
+            --no_bmc)
+                NO_BMC=true;;
+            --nvlink_alt_ber)
+                EXTRA_ARGS+=( "--nvlink_alt_ber" );;
+            --run_with_reduced_test_time)
+                EXTRA_ARGS+=( "--run_with_reduced_test_time" );;
+            --disable_nvidia_bug_report)
+                EXTRA_ARGS+=( "--disable_nvidia_bug_report" );;
+            --unload_mods_driver_before_flash)
+                UNLOAD_MODS_DRIVER_BEFORE_FLASH=true;;
+            --skip_driver_load)
+                SKIP_DRIVER_LOAD=true;;
+            --skip_ffa_verify)
+                SKIP_FFA_VERIFY=true;;
+            --skip_clink_module_install)
+                SKIP_CLINK_MODULE_INSTALL=true;;
+            --lockdown)
+                LOCKDOWN=true;;
+            --pex_no_gen6)
+                PEX_NO_GEN6=true;;
+            --partner_extra_logging=*)
+                PARTNER_EXTRA_LOGGING="${1#*=}"
+                if [[ -z $PARTNER_EXTRA_LOGGING ]]; then
+                    echo "ERROR: --partner_extra_logging must be specified with <power/thermal/voltage/clock>"
+                    echo ""
+                    show_usage_and_exit 1
+                fi
+                ;;
+            --partner_extra_logging_ms=*)
+                PARTNER_EXTRA_LOGGING_MS="${1#*=}"
+                if [[ -z $PARTNER_EXTRA_LOGGING_MS ]]; then
+                    echo "No value passed in for partner_extra_logging_ms. Setting logging interval to 500 ms"
+                    PARTNER_EXTRA_LOGGING_MS=500
+                fi
+                ;;
+            --partner_extra_logging_ms)
+                echo "No value passed in for partner_extra_logging_ms. Setting logging interval to 500 ms"
+                PARTNER_EXTRA_LOGGING_MS=500;;
+            --testargs=*)
+                is_testargs_supported || show_usage_and_exit 1
+                TESTARGS_FILE="${1#*=}";;
+            --level1)
+                LEVEL_1_TESTS=true;;
+            --level2)
+                LEVEL_2_TESTS=true;;
+            --ist)
+                IST_TESTS=true;;
+            --logic)
+                LOGIC=true;;
+            --sram)
+                SRAM=true;;
+            --dram)
+                DRAM=true;;
+            --run_on_error)
+                RUN_ON_ERROR=true
+                set_run_on_error=true;;
+            --fail_on_first_error)
+                RUN_ON_ERROR=false
+                set_fail_on_first_error=true;;
+            --skip_os_check)
+                [[ $HGX_PRODUCT == true ]] || show_usage_and_exit 1
+                EXTRA_ARGS+=( "--skip_os_check" )
+                DIAG_OS=true;;
+            --primary_diag_ip=*)
+                [[ $IS_MULTINODE_PRODUCT == true ]] || show_usage_and_exit 1
+                PRIMARY_DIAG_IP_SET=true
+                EXTRA_ARGS+=( "--connect ${1#*=}" );;
+            --topology=*)
+                [[ $IS_MULTINODE_PRODUCT == true ]] || show_usage_and_exit 1
+                EXTRA_ARGS+=( "-t ${1#*=}" );;
+            --diag_path=*)
+                [[ $IS_MULTINODE_PRODUCT == true ]] || show_usage_and_exit 1
+                DIAG_PATH=true
+                EXTRA_ARGS+=( "--diag_path ${1#*=}" );;
+            --skip_upload)
+                [[ $IS_MULTINODE_PRODUCT == true ]] || show_usage_and_exit 1
+                SKIP_UPLOAD=true;;
+            --failure_summary)
+                [[ $IS_MULTINODE_PRODUCT == true ]] || show_usage_and_exit 1
+                EXTRA_ARGS+=( "--failure_summary" );;
+            --skip_trunk_links)
+                [[ $IS_MULTINODE_PRODUCT == true ]] || show_usage_and_exit 1
+                SKIP_TRUNK_LINKS=true;;
+            --override_topology=*)
+                is_override_topology_option_supported || show_usage_and_exit 1
+                # If user provided a topology, use it
+                shift
+                NVLINK_TOPOLOGY="$1";;
+            --log)
+                shift
+                OUTPUT_LOG_DIR="$1";;
+            --test=*)
+                SPECIFIC_TEST_TO_RUN="${1#*=}" ;;
+            --skip_tests=*)
+                SPECIFIC_TESTS_TO_SKIP="${1#*=}" ;;
+            --unskip_tests=*)
+                SPECIFIC_TESTS_TO_UNSKIP="${1#*=}" ;;
+            --arm_ffa_src=*)
+                EXTRA_ARGS+=("--arm_ffa_src=${1#*=}") ;;
+            --sku=*)
+                SKU_NAME="${1#*=}"
+                EXTRA_ARGS+=("--sku_json=${1#*=}") ;;
+            $OPT_PARTNER_MFG)
+                RUN_PARTNER_MFG=true;;
+            $OPT_PARTNER_FIELD)
+                RUN_FIELDIAG=true;;
+            --run_spec=*)
+                # If user provided a run_spec, use it
+                RUN_SPEC="${1#*=}" ;;
+            --dra)
+                [[ $ENABLE_DRA_BY_DEFAULT != true ]] || show_usage_and_exit 1
+                ENABLE_DRA=true ;;
+            --disable_dra)
+                [[ $ENABLE_DRA_BY_DEFAULT == true ]] || show_usage_and_exit 1
+                ENABLE_DRA=false ;;
+            --global_dra_server_port=*)
+                GLOBAL_DRA_SERVER_PORT="${1#*=}" ;;
+            --dra_server_port=*)
+                DRA_SERVER_PORT="${1#*=}" ;;
+            --dra_client_fd=*)
+                DRA_CLIENT_FD="${1#*=}" ;;
+            --loopback_ip=*)
+                LOOPBACK_IP="${1#*=}" ;;
+            --gdm_fd=*)
+                GDM_FD_SET=true
+                EXTRA_ARGS+=( "--gdm_fd ${1#*=}" );;
+            --num_nodes_to_connect=*)
+                NUM_NODES_TO_CONNECT="${1#*=}" ;;
+            --managed_mode)
+                IS_MANAGED_MODE=true;;
+            --disable_auto_repair)
+                DISABLE_AUTO_REPAIR=true ;;
+            --use_platform_reset)
+                USE_PLATFORM_RESET=true ;;
+            --post_reset_delay_ms=*)
+                POST_RESET_DELAY_MS="${1#*=}" ;;
+            --skip_disk_space_check)
+                SKIP_DISK_SPACE_CHECK=true ;;
+            --enable_core_dump)
+                ENABLE_CORE_DUMP=true ;;
+            --enable_faulthandler)
+                ENABLE_FAULTHANDLER=true ;;
+            --fw_recipe=*)
+                EXTRA_ARGS+=( "--fw_recipe=${1#*=}" );;
+            --gdm_handshake_timeout_secs=*)
+                GDM_HANDSHAKE_TIMEOUT_SECS="${1#*=}" ;;
+            --help)
+                show_usage_and_exit 0 ;;
+            *)
+                show_usage_and_exit 1 ;;
+        esac
+        shift
+    done
+
+    if [[ $RUN_PARTNER_MFG == $RUN_FIELDIAG ]]; then
+        echo "Error: One of config $OPT_PARTNER_MFG or $OPT_PARTNER_FIELD is required!"
+        show_usage_and_exit 1
+    fi
+
+    if [[ $RUN_PARTNER_MFG == true ]] && [[ $RELEASE_TYPE == "field" ]]; then
+        echo "Error: Release type $RELEASE_TYPE doesn't support argument $OPT_PARTNER_MFG!"
+        show_usage_and_exit 1
+    fi
+
+    if [[ $set_run_on_error == true ]] && [[ $set_fail_on_first_error == true ]]; then
+        echo "ERROR: Either --fail_on_first_error or --run_on_error can be provided but not both. Please update command line to pass only one of them"
+        show_usage_and_exit 1
+    fi
+
+    if [[ ! -z "$RUN_SPEC" ]] && [[ $LEVEL_1_TESTS == true || $LEVEL_2_TESTS == true ]]; then
+        echo "ERROR: Cannot specify --run_spec together with --level1 or --level2"
+        show_usage_and_exit 1
+    fi
+
+    if [[ $RUN_FIELDIAG == true ]] && [[ $RELEASE_TYPE == "partner_mfg" ]]; then
+        echo "Error: Release type $RELEASE_TYPE doesn't support argument $OPT_PARTNER_FIELD!"
+        show_usage_and_exit 1
+    fi
+
+    if [[ $RUN_PARTNER_MFG == true ]] && [[ $LEVEL_1_TESTS == true ]]; then
+        echo "Error: $OPT_PARTNER_MFG does not accept argument --level1!"
+        show_usage_and_exit 1
+    fi
+
+    if [[ $RUN_PARTNER_MFG == true ]] && [[ $LEVEL_2_TESTS == true ]]; then
+        echo "Error: $OPT_PARTNER_MFG does not accept argument --level2!"
+        show_usage_and_exit 1
+    fi
+
+    if [[ $RUN_PARTNER_MFG == true ]] && [[ $IST_TESTS == true ]]; then
+        echo "Error: $OPT_PARTNER_MFG does not accept argument --ist!"
+        show_usage_and_exit 1
+    fi
+
+    if [[ $IST_TESTS == false ]] && [[ $LOGIC == true ]]; then
+        echo "Error:  Cannot use --logic without --ist!"
+        show_usage_and_exit 1
+    fi
+
+    if [[ $IST_TESTS == false ]] && [[ $SRAM == true ]]; then
+        echo "Error:  Cannot use --sram without --ist!"
+        show_usage_and_exit 1
+    fi
+
+    if [[ $IST_TESTS == false ]] && [[ $DRAM == true ]]; then
+        echo "Error:  Cannot use --dram without --ist!"
+        show_usage_and_exit 1
+    fi
+
+    if [[ $RUN_PARTNER_MFG == true ]] && [[ $RUN_GPU_FD == true ]]; then
+        echo "Error: $OPT_PARTNER_MFG does not accept argument --gpufielddiag!"
+        show_usage_and_exit 1
+    fi
+
+    if [[ $RUN_PARTNER_MFG == true ]] && [[ ! -z "$GPU_FD_ARGS" ]]; then
+        echo "Error: $OPT_PARTNER_MFG does not accept argument --gpu_fg_args!"
+        show_usage_and_exit 1
+    fi
+
+    if [[ $RUN_GPU_FD == true ]] && [[ ! -z "$SPECIFIC_TEST_TO_RUN" ]]; then
+        echo "Error: --gpufielddiag and --test cannot be used together! Specifying --test will not run GPU FD."
+        show_usage_and_exit 1
+    fi
+
+    if [[ ! -z "$GPU_FD_ARGS" ]] && [[ ! -z "$SPECIFIC_TEST_TO_RUN" ]]; then
+        echo "Error: --gpu_fg_args and --test cannot be used together! Specifying --test will not run GPU FD."
+        show_usage_and_exit 1
+    fi
+
+    if [[ $RUN_GPU_FD == true ]] && [[ $LEVEL_1_TESTS == true ]]; then
+        echo "Warning: Specifying --gpufielddiag and --level1 together will only run GPU FD!"
+    fi
+
+    if [[ $RUN_GPU_FD == true ]] && [[ $LEVEL_2_TESTS == true ]]; then
+        echo "Warning: Specifying --gpufielddiag and --level2 together will only run GPU FD!"
+    fi
+
+    if [[ ! -z $OUTPUT_LOG_DIR ]]; then
+        # Convert to absolute path if relative is provided.
+        [[ "$OUTPUT_LOG_DIR" = /* ]] || OUTPUT_LOG_DIR="${PWD}/$OUTPUT_LOG_DIR"
+        if [[ -d $OUTPUT_LOG_DIR && "$(ls -A $OUTPUT_LOG_DIR )" ]]; then
+            echo "Error: $OUTPUT_LOG_DIR exists and non empty, Please provide a non existing/empty dir."
+            show_usage_and_exit 1
+        else
+            EXTRA_ARGS+=( "--log=$OUTPUT_LOG_DIR" );
+        fi
+    fi
+
+    if [[ $RUN_ON_ERROR == true ]]; then
+        EXTRA_ARGS+=("--run_on_error");
+    fi
+
+    if [[ "$NO_BMC" == true ]]; then
+        EXTRA_ARGS+=("--no_bmc")
+    fi
+
+    if [[ "$SKIP_DRIVER_LOAD" == true ]]; then
+        EXTRA_ARGS+=("--use_system_drivers")
+    fi
+
+    if [[ "$SKIP_FFA_VERIFY" == true ]]; then
+        EXTRA_ARGS+=("--skip_ffa_verify")
+    fi
+
+    if [[ "$SKIP_CLINK_MODULE_INSTALL" == true ]]; then
+        EXTRA_ARGS+=("--skip_clink_module_install")
+    fi
+
+    if [[ "$UNLOAD_MODS_DRIVER_BEFORE_FLASH" == true ]]; then
+        EXTRA_ARGS+=("--unload_mods_driver_before_flash")
+    fi
+
+    if [[ "$SKIP_UPLOAD" == true ]]; then
+        EXTRA_ARGS+=("--skip_upload")
+    fi
+
+    if [[ "$SKIP_TRUNK_LINKS" == true ]]; then
+        EXTRA_ARGS+=("--skip_trunk_links")
+    fi
+
+    if [[ "$LOCKDOWN" == true ]]; then
+        EXTRA_ARGS+=("--lockdown")
+    fi
+
+    if [[ ! -z "$NVLINK_TOPOLOGY" ]]; then
+        EXTRA_ARGS+=("--override_topology=$NVLINK_TOPOLOGY")
+    fi
+
+    if [[ "$PEX_NO_GEN6" == "true" ]]; then
+        EXTRA_ARGS+=("--pex_no_gen6")
+    fi
+
+    if [[ "$ENABLE_CORE_DUMP" == "true" ]]; then
+        EXTRA_ARGS+=("--enable_core_dump")
+    fi
+
+    if [[ "$ENABLE_FAULTHANDLER" == "true" ]]; then
+        EXTRA_ARGS+=("--enable_faulthandler")
+    fi
+
+    if [[ ! -z "$PARTNER_EXTRA_LOGGING" ]]; then
+        EXTRA_ARGS+=( "--partner_extra_logging=$PARTNER_EXTRA_LOGGING" )
+    fi
+
+    if [[ -z "$PARTNER_EXTRA_LOGGING" && ! -z "$PARTNER_EXTRA_LOGGING_MS" ]]; then
+        echo "WARNING: --partner_extra_logging_ms is set but --partner_extra_logging is not set. Partnerdiag will not log extra information."
+    fi
+
+    if [[ ! -z "$PARTNER_EXTRA_LOGGING_MS" && "$PARTNER_EXTRA_LOGGING_MS" -gt 0 ]]; then
+        if [[ "$PARTNER_EXTRA_LOGGING_MS" -gt 100 ]]; then
+            EXTRA_ARGS+=( "--partner_extra_logging_ms=$PARTNER_EXTRA_LOGGING_MS" )
+        else
+            echo "Partnerdiag logging polling interval (ms) must be a number greater than 100"
+            show_usage_and_exit 1
+        fi
+    fi
+
+    if [[ "$IS_MULTINODE_PRODUCT" == true ]]; then
+
+        if [[ "$PRIMARY_DIAG_IP_SET" == false && "$GDM_FD_SET" == false ]]; then
+            echo "Either --primary_diag_ip or --gdm_fd needs to be provided";
+            show_usage_and_exit 1
+        fi
+
+        if [[ "$PRIMARY_DIAG_IP_SET" == true && "$GDM_FD_SET" == true ]]; then
+            echo "Can't set both --primary_diag_ip and --gdm_fd. Either TCP/IP socket or Unix socket needs to be used ";
+            show_usage_and_exit 1
+        fi
+
+        if [[ "$IS_MANAGED_MODE" == true ]]; then
+            # Managed mode will be executed only in the case of field which runs only on the compute nodes.
+            # If num_nodes_to_conenct is set then its a primary node
+            if [[ ! -z "$NUM_NODES_TO_CONNECT" ]]; then
+                EXTRA_ARGS+=("--primary $NUM_NODES_TO_CONNECT")
+            else
+                # If num_nodes_to_conenct is not set then its a secondary node, so pass the node_type
+                EXTRA_ARGS+=("--node_type compute_node")
+            fi
+        else
+            EXTRA_ARGS+=("--primary")
+        fi
+
+        EXTRA_ARGS+=("--timeout 60000")
+        # Convert gdm_handshake_timeout_secs to milliseconds
+        EXTRA_ARGS+=("--startup_delay $((GDM_HANDSHAKE_TIMEOUT_SECS * 1000))")
+        EXTRA_ARGS+=("--multinode_dbg")
+        EXTRA_ARGS+=("--gdm_config_json $SRC_DIR/gdm_config.json")
+    fi
+
+    #For Skinny Joe, if given gpu_fd_args does not includes "gen4 x1", add it by default
+    if [[ ! $GPU_FD_ARGS =~ "gen4 x1" && "$PRODUCT_NAME" == "$SKINNY_JOE_PRODUCT_NAME" ]]; then
+        GPU_FD_ARGS="$GPU_FD_ARGS gen4 x1"
+    fi
+
+    # GPU FD invoked via partnerdiag should/do have skip_nvlink by default
+    # UNIV GPU FD invoked directly through OneDiag does NOT have skip_nvlink by default
+    GPU_FD_EXTRA_ARGS+=("skip_nvlink")
+
+    if [[ "$PRODUCT_NAME" == "$GB200_NVL_2_4_PRODUCT_NAME" || \
+          "$PRODUCT_NAME" == "$GB200_NVL_2_2_PRODUCT_NAME" ]]; then
+        # If using old fdmain.sh, force 2xGPU product to use multifieldiag.sh
+        if [[ "$FD_MAIN" == "fdmain.sh" ]]; then
+            GPU_FD_EXTRA_ARGS+=("multi_instance")
+        fi
+        # Any manipulation of gen speed should disable the hard-coded defaults:
+        if [[ ! "$GPU_FD_ARGS" =~ gen[0-9] ]] && [[ $GPU_FD_PEX_LINK_AUTO != true ]]; then
+            GPU_FD_EXTRA_ARGS+=("pex_lanes=1")
+            GPU_FD_EXTRA_ARGS+=("gen4")
+        fi
+    fi
+
+    if [[ "$FORCE_PRODUCT_NAME" != "" ]]; then
+        if [[ $FD_MAIN != "fdmain_onediag.sh" || $RUN_GPU_FD != true ]]; then
+            EXTRA_ARGS+=("--force_product=$FORCE_PRODUCT_NAME")
+        fi
+    fi
+
+    if [[ $ENABLE_DRA == true ]]; then
+        EXTRA_ARGS+=("--dra")
+    fi
+
+    if [[ "$GLOBAL_DRA_SERVER_PORT" != 0 && ! -z "$DRA_CLIENT_FD" ]]; then
+        echo "Either --global_dra_server_port or --dra_client_fd needs to be set. Both cant be used at same time"
+        show_usage_and_exit 1
+    fi
+
+    if [[ ! -z "$LOOPBACK_IP" ]]; then
+        if [[ $RUN_GPU_FD == false ]]; then
+            echo "Warning: It is recommended to set loopback_ip in testspec json for L10 and L11. This option is only used for GPU FD."
+        fi
+        EXTRA_ARGS+=("--loopback_ip=$LOOPBACK_IP")
+    fi
+
+    if [[ "$GLOBAL_DRA_SERVER_PORT" != 0 ]]; then
+        if [[ $ENABLE_DRA != true ]]; then
+            echo "DRA server isn't enabled. Cannot set global DRA port."
+            show_usage_and_exit 1
+        fi
+        EXTRA_ARGS+=("--global_dra_port $GLOBAL_DRA_SERVER_PORT")
+    fi
+
+    if [[ "$DRA_SERVER_PORT" != 0 ]]; then
+        if [[ $ENABLE_DRA != true ]]; then
+            echo "DRA server isn't enabled. Cannot set DRA port."
+            show_usage_and_exit 1
+        fi
+        EXTRA_ARGS+=("--dra_port $DRA_SERVER_PORT")
+    fi
+
+    if [[ ! -z "$DRA_CLIENT_FD" ]]; then
+        if [[ $ENABLE_DRA != true ]]; then
+            echo "DRA server isn't enabled. Cannot set DRA Client fd."
+            show_usage_and_exit 1
+        fi
+        EXTRA_ARGS+=("--dra_client_fd $DRA_CLIENT_FD")
+    fi
+
+    if [[ ! -z "$POST_RESET_DELAY_MS" ]]; then
+        if [[ $USE_POST_RESET_DELAY != true ]]; then
+            echo "post_reset_delay_ms should not be used in this platform."
+            show_usage_and_exit 1
+        fi
+        EXTRA_ARGS+=("--post_reset_delay_ms $POST_RESET_DELAY_MS")
+    fi
+
+    if [[ "$USE_PLATFORM_RESET" == "true" ]]; then
+        EXTRA_ARGS+=( "--use_platform_reset" )
+        GPU_FD_EXTRA_ARGS+=("reset_type=platform_reset")
+    else
+        if ([[ "$PRODUCT_NAME" == "$GB200_NVL_2_4_PRODUCT_NAME"  ]] ||
+            [[ "$PRODUCT_NAME" == "$GB200_NVL_2_2_PRODUCT_NAME"  ]] ||
+            [[ "$PRODUCT_NAME" == "$GB200_NVL_72_2_2_RACK_PRODUCT_NAME" ]] ||
+            [[ "$PRODUCT_NAME" == "$GB200_NVL_72_2_4_RACK_PRODUCT_NAME" ]]) &&
+            [[ "$IST_TESTS" == false ]]; then
+            GPU_FD_EXTRA_ARGS+=("reset_type=flr")
+        fi
+    fi
+    if [[ $SRAM == true ]]; then
+        TEST_CATEGORIES+=( "ist_sram" )
+    fi
+
+    if [[ $DRAM == true ]]; then
+        TEST_CATEGORIES+=( "ist_dram" )
+    fi
+
+    if [[ $LOGIC == true ]]; then
+        TEST_CATEGORIES+=( "ist_logic" )
+    fi
+}
+
+get_gpu_fd_log_path()
+{
+    local ROOT_LOG_DIR="$SRC_DIR/dgx"
+    [[ "$OUTPUT_LOG_DIR" != "" ]] && ROOT_LOG_DIR="$OUTPUT_LOG_DIR"
+    local LOG_DIR_BASE="$ROOT_LOG_DIR/logs"
+    local SECS=$(date +%s)
+    local LOGSDIR="$LOG_DIR_BASE-$(date '+%Y%m%d-%H%M%S' --date="@$SECS")"
+    # Make sure each process has different log directory
+    while [[ -d $LOGSDIR ]]; do
+        SECS=$(( SECS + 1 ))
+        LOGSDIR="$LOG_DIR_BASE-$(date '+%Y%m%d-%H%M%S' --date="@$SECS")"
+    done
+    echo "$LOGSDIR"
+}
+
+run_gpufieldiag_tests()
+{
+    if [[ "$RUN_GPU_FD" == "true" ]]; then
+        [[ ! -d "$SRC_DIR/logs" ]] && mkdir -p "$SRC_DIR/logs"
+        
+        if [[ "$FD_MAIN" == "fdmain_onediag.sh" ]]; then
+            local onediag_exe=$(find_fieldiag_package)
+            if [[ $AUTO_REPAIR_SUPPORTED == true ]] && [[ $DISABLE_AUTO_REPAIR == true ]]; then
+                GPU_FD_EXTRA_ARGS+=("disable_auto_repair")
+            fi
+            local extra_args_string=$(IFS=' '; echo "${EXTRA_ARGS[*]}")
+            extra_args_string="${extra_args_string// /;}" # Replace all spaces with commas so fdmain_onediag.sh's arg parsing logic can recognize it in full.
+            run_and_log true "${FD_MAIN}" "onediag_exe=${onediag_exe}" "${GPU_FD_EXTRA_ARGS[@]}" "${GPU_FD_ARGS}" "onediag_passthrough_args=[${extra_args_string}]"
+        else
+            local FD_MAIN="fdmain.sh"
+            local FD_LOG="fieldiag.log"
+            local GPU_FD_LOG_PATH=$(get_gpu_fd_log_path)
+            local RC=0
+            mkdir -p "$GPU_FD_LOG_PATH"
+            setup_one_diag_env "$GPU_FD_LOG_PATH"
+            GPU_FD_EXTRA_ARGS+=("logfilename=$GPU_FD_LOG_PATH/gpu_fd_logs")
+            GPU_FD_EXTRA_ARGS+=("print_summary")
+            GPU_FD_EXTRA_ARGS+=("hgx_fd_version=$PACKAGE_NAME")
+            run_and_log false "$FD_MAIN" "${GPU_FD_EXTRA_ARGS[@]}" "$GPU_FD_ARGS" || RC=$?
+            cp "$SRC_DIR/$FD_LOG" "$GPU_FD_LOG_PATH"
+            if [[ "$RC" != "0" ]]; then
+                exit $RC
+            fi
+        fi
+    fi
+}
+
+run_onediagfield_tests()
+{
+    if [[ "$RUN_GPU_FD" == "true" ]]; then
+        return
+    fi
+
+    local FILE
+    local SPEC_FILE=""
+    local FIELDIAG="$1"
+    [[ ! -d $SRC_DIR/logs ]] && mkdir -p $SRC_DIR/logs
+
+    if [[ ! -z "$RUN_SPEC" ]]; then
+        SPEC_FILE=$RUN_SPEC
+    elif [[ "$RUN_PARTNER_MFG" == "true" ]]; then
+        SPEC_FILE="spec_${PRODUCT_NAME}_partner_mfg.json"
+    elif [[ "$PACKAGE_TYPE" == "$PACKAGE_TYPE_THERMAL_DATA_COLLECTION" ]]; then
+        SPEC_FILE="spec_${PRODUCT_NAME}_thermal_stress_field.json"
+    elif [[ $LEVEL_1_TESTS == true ]]; then
+        SPEC_FILE="spec_${PRODUCT_NAME}_field_level1.json"
+        [[ $IS_MANAGED_MODE != true ]] || SPEC_FILE="spec_${PRODUCT_NAME}_field_level1_tcpip_managed_mode.json"
+        [[ $GDM_FD_SET != true ]] || SPEC_FILE="spec_${PRODUCT_NAME}_field_level1_with_socket_fd.json"
+    elif [[ $LEVEL_2_TESTS == true ]]; then
+        SPEC_FILE="spec_${PRODUCT_NAME}_field_level2.json"
+        [[ $IS_MANAGED_MODE != true ]] || SPEC_FILE="spec_${PRODUCT_NAME}_field_level2_tcpip_managed_mode.json"
+        [[ $GDM_FD_SET != true ]] || SPEC_FILE="spec_${PRODUCT_NAME}_field_level2_with_socket_fd.json"
+    elif [[ $IST_TESTS = true ]]; then
+        SPEC_FILE="spec_${PRODUCT_NAME}_field_ist.json"
+    else
+        # If we do not specify a level, then run all tests + GPU field diag if supported. Level 2 contains all tests.
+        SPEC_FILE="spec_${PRODUCT_NAME}_field_level2.json"
+        [[ $GDM_FD_SET != true ]] || SPEC_FILE="spec_${PRODUCT_NAME}_field_level2_with_socket_fd.json"
+        # If --test is passed, then don't run GPU FD.
+        # Note that GPU FD will still be run if --skip_tests is passed.
+        # Also note that --run_on_error will not run GPU FD with -run_on_error.
+        if [[ -z "$SPECIFIC_TEST_TO_RUN" ]] && is_gpu_fielddiag_supported; then
+            RUN_GPU_FD=true
+        fi
+    fi
+
+    if [[ ! -z "$SPEC_FILE" ]]; then
+        EXTRA_ARGS+=("--run_spec=${SPEC_FILE}")
+    fi
+
+    if [[ $HGX_PRODUCT == true && $DIAG_OS == false ]]; then
+        EXTRA_ARGS+=("--skip_os_check");
+    fi
+
+    if [[ ! -z "$SPECIFIC_TEST_TO_RUN" && ! -z "$SPECIFIC_TESTS_TO_SKIP" ]]; then
+        echo "ERROR: Either --test or --skip_tests can be provided but not both. Please update command line to pass only one of them"
+        echo ""
+        show_usage_and_exit 1
+    fi
+
+    if [[ ! -z "$SPECIFIC_TEST_TO_RUN" ]]; then
+        # Check whether we have inforom in test spec. If yes, save the test name to INFOROM_TEST_NAME
+        if [[ -f "$SPEC_FILE" ]]; then
+            INFOROM_TEST_NAME=`grep "virtual_id" "$SPEC_FILE" | grep -i '"inforom"' | grep -o -i "inforom" || echo ""`
+        elif [[ -f "$SRC_DIR/$SPEC_FILE" ]]; then
+            INFOROM_TEST_NAME=`grep "virtual_id" "$SRC_DIR/$SPEC_FILE" | grep -i '"inforom"' | grep -o -i "inforom" || echo ""`
+        else
+            echo "ERROR: Spec file $SPEC_FILE not found in current or source directory."
+            show_usage_and_exit 1
+        fi
+        if [[ "$INFOROM_TEST_NAME" == "" ]]; then
+            EXTRA_ARGS+=("--test_id=$SPECIFIC_TEST_TO_RUN")
+        else
+            EXTRA_ARGS+=("--test_id=$INFOROM_TEST_NAME,$SPECIFIC_TEST_TO_RUN")
+        fi
+    fi
+
+    if [[ ! -z "$SPECIFIC_TESTS_TO_SKIP" ]]; then
+        EXTRA_ARGS+=("--skip_id=$SPECIFIC_TESTS_TO_SKIP")
+    fi
+
+    if [[ ! -z "$SPECIFIC_TESTS_TO_UNSKIP" ]]; then
+        EXTRA_ARGS+=("--unskip_id=$SPECIFIC_TESTS_TO_UNSKIP")
+    fi
+    # Users can run partnerdiag with both --skip_tests=foo,... and
+    # --unskip_tests=bar,... . It performs a check for virtual ids in skip_id
+    # and unskip_id if the skip_tests key of those virtual ids specified the
+    # test spec must be set as true and false respectively. Otherwise, the
+    # dgx_common.py script terminates.
+
+    if [[ $AUTO_REPAIR_SUPPORTED == true ]]; then
+        EXTRA_ARGS+=("--auto_repair")
+
+        if [[ $DISABLE_AUTO_REPAIR == true ]]; then
+            EXTRA_ARGS+=("--check_repairability_only")
+        fi
+    fi
+
+    if [[ "$IS_SWITCH_OS" == "true" ]]; then
+        setup_switch_os_env
+        EXTRA_ARGS+=("--host_pipe=$(get_host_pipe)")
+    fi
+
+    if [[ ${#TEST_CATEGORIES[@]} > 0 ]]; then
+        JOINED_TEST_CATEGORIES=$(printf ",%s" "${TEST_CATEGORIES[@]}" | cut -c 2-)
+        EXTRA_ARGS+=("--spec_test_category=$JOINED_TEST_CATEGORIES")
+    fi
+
+    if [[ ${#EXTRA_ARGS[@]} > 0 ]]; then
+        run_and_log true $FIELDIAG ${EXTRA_ARGS[@]}
+    else
+        run_and_log true $FIELDIAG
+    fi
+}
+
+add_serial_number()
+{
+    # for GB compute tray or switch, get chassis serial number
+    if [[ "$OUTPUT_TRAY_BOARD_SERIAL" == true ]]; then
+        if ! command -v dmidecode >/dev/null 2>&1; then
+            return
+        fi
+
+        local TRAY_SERIAL=$(dmidecode -t chassis | awk -F': ' '/Serial Number/ {print $2}' | head -n1)
+        local PROD_SERIAL=$(dmidecode -t 2 | awk '
+            /^Base Board Information/ {gpu=0}
+            /Product Name/ && /GPU/ {gpu=1}
+            gpu && /Serial Number/ {print $3}
+        ')
+
+        # We should get two PG548 SN in L10 diag
+        count=$(echo "$PROD_SERIAL" | wc -l)
+
+        if [[ "$count" -eq 2 && -n "$TRAY_SERIAL" ]]; then
+            result="$TRAY_SERIAL"-$(echo "$PROD_SERIAL" | paste -sd-)
+            echo "$result"
+        fi
+        return
+    fi
+
+    # L11 diag, get rack serial number
+    if [[ "$IS_MULTINODE_PRODUCT" == true ]]; then
+        if ! command -v ipmitool >/dev/null 2>&1; then
+            return
+        fi
+        local CBC_SERIALS=$(ipmitool fru print | awk '
+            /^FRU Device Description *: CBC/ { in_cbc = 1; next }
+            /^FRU Device Description/ { in_cbc = 0 }
+            in_cbc && /Chassis Serial/ { print $NF }
+            ' | sort -u)
+        if [[ -n "$CBC_SERIALS" ]]; then
+            echo "$CBC_SERIALS"
+        fi
+        return
+    fi
+}
+
+copy_logs()
+{
+    # If --log and --tar_custom_log_dir is specified, tar the contents of the folder into its parent directory of the folder itself.
+    # If using default log directory, search the default log folder and tar all folders matching logs-*-* into the /logs directory
+    # Regular logs are located in "$SRC_DIR"/dgx
+    # Multinode logs are located in "$SRC_DIR"/dgx-<arch>/dgx, where arch is either amd64 or aarch64
+    # This function assumes the log folder names are unique
+    echo "Copying logs..."
+    local LOG_DIRS=()
+    local LOG_SEARCH_DIR=(
+        "${SRC_DIR}/dgx"
+        "${SRC_DIR}/dgx_amd64/dgx"
+        "${SRC_DIR}/dgx_aarch64/dgx"
+    )
+
+    for SEARCH_DIR in ${LOG_SEARCH_DIR[@]}; do
+        # Ignore if the folder doesn't exist
+        if [ ! -d "$SEARCH_DIR" ]; then
+            continue
+        fi
+        local FOUND_LOGS=()
+        # We use this while-loop instead of readarray -d '' for backwards compatibility with older versions of bash
+        while IFS= read -r -d '' log; do
+            FOUND_LOGS+=( "$log" )
+        done < <(find "$SEARCH_DIR" -type d -name 'logs-*-*' -print0)
+        LOG_DIRS+=( ${FOUND_LOGS[@]} )
+    done
+
+    # If the user specified a custom directory, only copy that directory
+    if [[ "$OUTPUT_LOG_DIR" != "" ]]; then
+        LOG_DIRS=("$OUTPUT_LOG_DIR")
+    fi
+
+    local SERIAL_NUM=$(add_serial_number)
+
+    for FILE in ${LOG_DIRS[@]}; do
+        # Extract the folder from the full path
+        local LOGNAME="$(basename "$FILE")"
+        local LOGNAME_WITH_SERIAL="${LOGNAME}"
+        if [[ -n "$SERIAL_NUM" ]]; then
+            LOGNAME_WITH_SERIAL="${LOGNAME}-${SERIAL_NUM}"
+        fi
+        # Legacy GPU Field Diag (without onediag as frontend) generates tgz of logs. So just copy it.
+        if [[ "$LOGNAME" =~ \.tgz$ ]]; then
+
+            # get rid of the .tgz extension to add serial number
+            local BASENAME="${LOGNAME%.tgz}"
+            if [[ -n "$SERIAL_NUM" ]]; then
+                BASENAME="${BASENAME}-${SERIAL_NUM}.tgz"
+            else
+                BASENAME="${LOGNAME}.tgz"
+            fi
+            if [[ ! -f "$SRC_DIR/logs/$BASENAME" ]]; then
+                cp "$FILE" "$SRC_DIR/logs/$BASENAME"
+            fi
+        elif ! compgen -G "$SRC_DIR/logs/${LOGNAME}"* > /dev/null; then
+            # Copy and rename fieldiag.log to partnerdiag.log
+            # The main purpose is to log the partnerdiag command being run.
+            if [ -f "$SRC_DIR/fieldiag.log" ]; then
+                mv $SRC_DIR/fieldiag.log $FILE/partnerdiag.log
+            fi
+            # Aviod re-tar the logs
+            # In case of switch tray diag link_bringup.log will be generated
+            [[ ! -f "$SRC_DIR/link_bringup.log" ]] || cp "$SRC_DIR/link_bringup.log" "$FILE"
+            # In case of GPU FD with legacy fdmain.sh crashed, copy logs from dgx/tests/mods.xxx/__fieldiag*
+            # Note that some logs are stale, so we might copy the logs of the last run if new GPUFD hasn't started.
+            if [[ "$FD_MAIN" == "fdmain.sh" ]] && [[ $RUN_GPU_FD == true ]] && [[ ! -f "$FILE/gpu_fd_logs.tgz" ]]; then
+                while IFS= read -r -d '' log_file; do
+                    if [[ -f "$log_file" ]] && [[ "$log_file" =~ (__fieldiag.*) ]]; then
+                        local relative_path="${BASH_REMATCH[1]}"
+                        local dest_dir="$FILE/$(dirname "$relative_path")"
+                        local dest_file="$FILE/$relative_path"
+                        mkdir -p "$dest_dir"
+                        cp "$log_file" "$dest_file"
+                    fi
+                done < <(find "$SRC_DIR" -type f \( -name "*.log" -o -name "*.mle" \) -path "$SRC_DIR/dgx/tests/mods.*/__fieldiag*" -print0)
+            fi
+
+            tar -czf "$SRC_DIR/logs/$LOGNAME_WITH_SERIAL".tgz -C "$FILE" . > /dev/null 2>&1
+        fi
+    done
+}
+
+run_and_log()
+{
+    local EXIT_ON_ERROR="$1"
+    local FIELDIAG="$2"
+    shift 2
+    if [[ "$FIELDIAG" != "" ]]; then
+        if [[ "$IS_SWITCH_OS" == "true" ]]; then
+            # Run the script to bringup the nvlinks.
+            "$SRC_DIR/dgx/tests/tools/qm3_link_bringup.sh" "sx_ib_0"
+            local CONTAINER_NAME="onediag"
+            if [[ $EXIT_ON_ERROR == true ]]; then
+                docker exec "$CONTAINER_NAME" "$SRC_DIR/$FIELDIAG" --use_eud $@ 2>&1 | tee -a "$SRC_DIR/fieldiag.log" || exit $?
+            else
+                docker exec "$CONTAINER_NAME" "$SRC_DIR/$FIELDIAG" --use_eud $@ 2>&1 | tee -a "$SRC_DIR/fieldiag.log"
+            fi
+        else
+            if [[ $EXIT_ON_ERROR == true ]]; then
+                "$SRC_DIR/$FIELDIAG" $@ 2>&1 | tee -a "$SRC_DIR/fieldiag.log" || exit $?
+            else
+                "$SRC_DIR/$FIELDIAG" $@ 2>&1 | tee -a "$SRC_DIR/fieldiag.log"
+            fi
+        fi
+    fi
+}
+
+setup_switch_os_env()
+{
+    local CONTAINER_FILE=$(ls $SRC_DIR/onediagmfgcontainer.*)
+    local CONTAINER_NAME="onediag"
+    local output=$(docker load -i "$CONTAINER_FILE" 2>&1)
+    local CONTAINER_IMAGE=$(echo "$output" | sed 's/Loaded image: //')
+    # Remove the existing container
+    docker container rm -f "$CONTAINER_NAME" > /dev/null 2>&1
+    # Mounting SRC_DIR as SRC_DIR inside the container, so that the logs folders will show up in the dgx banner correctly.
+    docker run -d -i --device=/dev/infiniband --privileged --network=host --name="$CONTAINER_NAME" -v "$SRC_DIR":"$SRC_DIR" "$CONTAINER_IMAGE" > /dev/null 2>&1
+    # Create /dev/mods in the container
+    docker exec "$CONTAINER_NAME" touch /dev/mods
+    docker exec "$CONTAINER_NAME" chmod 777 /dev/mods
+
+    # Start the host named pipe process to comunicate with docker container
+    start_host_pipe_listener
+}
+
+cleanup()
+{
+    copy_logs || true
+
+    # In HGX-2 TinyLinux we shouldn't unload mods driver because when we can't
+    # compile (tinylinux doesn't have compiler because of space restrictions)
+    # and insert it again
+    if [[ ($HGX_PRODUCT == false || $DIAG_OS == false) && $PRIMARY_DIAG_IP_SET != true ]]; then
+        unload_module mods || true
+    fi
+
+    # If not on diag OS, clean up a few more things
+    # This code was used to cleanup the legacy setup function that
+    # disabled the nvidia udev rules which enables driver persistence.
+    # See udevfix_WAR() in dgxmain for the more robust implementation.
+    if [[ $PRIMARY_DIAG_IP_SET == false && $DIAG_OS == false ]]; then
+        sudo systemctl stop udev.service >/dev/null 2>&1 || true
+        sudo unlink /etc/udev/rules.d/71-nvidia.rules >/dev/null 2>&1 || true
+        sudo udevadm control --reload-rules >/dev/null 2>&1 && udevadm trigger >/dev/null 2>&1 || true
+    fi
+
+    if [[ "$IS_SWITCH_OS" == "true" ]]; then
+        # Stop the host named pipe listener process
+        stop_host_pipe_listener || true
+    fi
+}
+
+reporterror()
+{
+    echo "Error while executing command: \"$BASH_COMMAND\" - Please check fieldiag.log." | tee -a "$SRC_DIR/fieldiag.log"
+}
+
+start_host_pipe_listener()
+{
+    local PIPE_IN="$(get_host_pipe)_in"
+    local PIPE_OUT="$(get_host_pipe)_out"
+    local PIPE_EXIT_CODE="$(get_host_pipe)_ec"
+
+    # It doesn't matter if these files already exist.
+    mkfifo $PIPE_IN || true
+    mkfifo $PIPE_OUT || true
+    mkfifo $PIPE_EXIT_CODE || true
+
+    while true; do
+        set +e
+        trap - ERR
+
+        eval "$(cat $PIPE_IN)" > $PIPE_OUT 2>&1
+        echo "EXIT_CODE=$?" > $PIPE_EXIT_CODE
+        sleep 0.1
+    done &
+    PIPED_PROCESS_PID=$!
+}
+
+stop_host_pipe_listener()
+{
+    local PIPE_IN="$(get_host_pipe)_in"
+    local PIPE_OUT="$(get_host_pipe)_out"
+    local PIPE_EXIT_CODE="$(get_host_pipe)_ec"
+
+    kill -15 $PIPED_PROCESS_PID
+
+    rm $PIPE_IN || true
+    rm $PIPE_OUT || true
+    rm $PIPE_EXIT_CODE || true
+}
+
+get_host_pipe()
+{
+    local PIPEDIR="$SRC_DIR/pipe"
+    mkdir -p "$PIPEDIR"
+    echo "$PIPEDIR/.host_pipe"
+}
+
+trap reporterror ERR
+main "$@"

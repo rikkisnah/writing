@@ -1,0 +1,243 @@
+{
+    "global_args": {
+        "DiagType": "partner_mfg",
+        "DiagInfo": {
+            "DiagName": "GB200-NVL L11 Partner Manufacturing Diag",
+            "RunLevel": ""
+        },
+        "cluster_cfg": {
+            "cluster_type": "GB200_NVL_2_4_72x1",
+            "test_target_node_type": "compute_only",
+            "gdm_port": 8765,
+            "imex_port_num": 5080,
+            "imex_ctrl_srv_port_num": 1020,
+            "enable_imex_message_forwarder": true,
+            "imex_message_forwarder_port": 0,
+            "l1_domain_id": 8193,
+            "l2_domain_id": 16384,
+            "node_address_config": "MNNVL_NODE_ADDRESS_CONFIG",
+            "cluster_node_logins": {
+                "compute_node": {
+                    "user": "nvidia",
+                    "passwd": "nvidia"
+                },
+                "switch_node": {
+                    "user": "admin",
+                    "passwd": "nvidia"
+                },
+                "inter_switch_node": {
+                    "user": "root",
+                    "passwd": "root"
+                }
+            },
+            "hosts": {
+                "10.114.248.6": {
+                    "node_type": "compute_node",
+                    "host_id": "COMPUTE_NODE_0",
+                    "rack_slot": 1
+                },
+                "10.114.248.7": {
+                    "node_type": "compute_node",
+                    "host_id": "COMPUTE_NODE_1",
+                    "rack_slot": 2
+                },
+                "10.114.248.8": {
+                    "node_type": "compute_node",
+                    "host_id": "COMPUTE_NODE_2",
+                    "rack_slot": 3
+                },
+                "10.114.248.9": {
+                    "node_type": "compute_node",
+                    "host_id": "COMPUTE_NODE_3",
+                    "rack_slot": 4
+                },
+                "10.114.248.10": {
+                    "node_type": "compute_node",
+                    "host_id": "COMPUTE_NODE_4",
+                    "rack_slot": 5
+                },
+                "10.114.248.11": {
+                    "node_type": "compute_node",
+                    "host_id": "COMPUTE_NODE_5",
+                    "rack_slot": 6
+                },
+                "10.114.248.12": {
+                    "node_type": "compute_node",
+                    "host_id": "COMPUTE_NODE_6",
+                    "rack_slot": 7
+                },
+                "10.114.248.13": {
+                    "node_type": "compute_node",
+                    "host_id": "COMPUTE_NODE_7",
+                    "rack_slot": 8
+                },
+                "10.114.248.101": {
+                    "node_type": "switch_node",
+                    "host_id": "SWITCH_NODE_0",
+                    "rack_slot": 9
+                },
+                "10.114.248.102": {
+                    "node_type": "switch_node",
+                    "host_id": "SWITCH_NODE_1",
+                    "rack_slot": 10
+                },
+                "10.114.248.103": {
+                    "node_type": "switch_node",
+                    "host_id": "SWITCH_NODE_2",
+                    "rack_slot": 11
+                },
+                "10.114.248.104": {
+                    "node_type": "switch_node",
+                    "host_id": "SWITCH_NODE_3",
+                    "rack_slot": 12
+                },
+                "10.114.248.105": {
+                    "node_type": "switch_node",
+                    "host_id": "SWITCH_NODE_4",
+                    "rack_slot": 13
+                },
+                "10.114.248.106": {
+                    "node_type": "switch_node",
+                    "host_id": "SWITCH_NODE_5",
+                    "rack_slot": 14
+                },
+                "10.114.248.107": {
+                    "node_type": "switch_node",
+                    "host_id": "SWITCH_NODE_6",
+                    "rack_slot": 15
+                },
+                "10.114.248.108": {
+                    "node_type": "switch_node",
+                    "host_id": "SWITCH_NODE_7",
+                    "rack_slot": 16
+                },
+                "10.114.248.109": {
+                    "node_type": "switch_node",
+                    "host_id": "SWITCH_NODE_8",
+                    "rack_slot": 17
+                },
+                "10.114.248.14": {
+                    "node_type": "compute_node",
+                    "host_id": "COMPUTE_NODE_8",
+                    "rack_slot": 18
+                },
+                "10.114.248.15": {
+                    "node_type": "compute_node",
+                    "host_id": "COMPUTE_NODE_9",
+                    "rack_slot": 19
+                },
+                "10.114.248.16": {
+                    "node_type": "compute_node",
+                    "host_id": "COMPUTE_NODE_10",
+                    "rack_slot": 20
+                },
+                "10.114.248.17": {
+                    "node_type": "compute_node",
+                    "host_id": "COMPUTE_NODE_11",
+                    "rack_slot": 21
+                },
+                "10.114.248.18": {
+                    "node_type": "compute_node",
+                    "host_id": "COMPUTE_NODE_12",
+                    "rack_slot": 22
+                },
+                "10.114.248.19": {
+                    "node_type": "compute_node",
+                    "host_id": "COMPUTE_NODE_13",
+                    "rack_slot": 23
+                },
+                "10.114.248.20": {
+                    "node_type": "compute_node",
+                    "host_id": "COMPUTE_NODE_14",
+                    "rack_slot": 24
+                },
+                "10.114.248.21": {
+                    "node_type": "compute_node",
+                    "host_id": "COMPUTE_NODE_15",
+                    "rack_slot": 25
+                },
+                "10.114.248.22": {
+                    "node_type": "compute_node",
+                    "host_id": "COMPUTE_NODE_16",
+                    "rack_slot": 26
+                },
+                "10.114.248.23": {
+                    "node_type": "compute_node",
+                    "host_id": "COMPUTE_NODE_17",
+                    "rack_slot": 27
+                }
+            }
+        },
+        "prometheus_url": "http://10.115.17.102:9352/csv/metrics",
+        "prometheus_thresholds": {
+            "trunk_links": {
+                "FecEffectiveBer Bit Error Rate" : 1e-9,
+                "PhySymbBer Bit Error Rate" : 1e-25,
+                "FecTotalRawBer Bit Error Rate": 5e-6
+            },
+            "access_links": {
+                "FecEffectiveBer Bit Error Rate" : 1e-9,
+                "PhySymbBer Bit Error Rate" : 1e-25
+            }
+        },
+        "EnableDeviceVerify": false,
+        "enable_mods_gdm": true,
+        "enable_mods_fm": true,
+        "enable_gfm_in_gdm": false,
+        "EnableMultinodeNvlinkTraffic": false,
+        "mods_execution_retry_count": 5,
+        "use_python_requests_for_redfish": true,
+        "redfish_curl_connect_timeout": 5,
+        "bmc_redfish_credentials": {
+            "username": "root",
+            "password": "0penBmc"
+        },
+        "bmc_ssh_credentials": {
+            "username": "root",
+            "password": "0penBmc"
+        },
+        "mods_multiinstance_inter_launch_delay_sec": 2,
+        "product_config" : {
+            "C2CLinkMask" : "gb_c1_g2"
+        },
+        "global_args": [
+            "nvlink_mask=0x3FFFF",
+            "timeout_ms=30000"
+        ]
+    },
+    "actions": [
+        {
+            "args": {
+                "timeout_sec": 120
+            },
+            "virtual_id": "inforom",
+            "action": "inforom"
+        },
+        {
+            "virtual_id": "NvlGpuStress",
+            "args": {
+                "concurrent": {
+                    "enable_mods_gdm": false,
+                    "concurrent_test_mode": "PYRO_CYCLE_BOUNCEBACK",
+                    "args": [
+                        "nvlink_skip_check",
+                        "c2c_disable",
+                        "run_on_error"
+                    ]
+                },
+                "concurrent_uva": {
+                    "skip_test": true,
+                    "args": []
+                },
+                "singleinstance": {
+                    "skip_test": true
+                },
+                "timeout_sec": 6600,
+                "enable_prometheus": false
+            },
+            "action": "nvlink",
+            "pass_on_fail": false
+        }
+    ],
+    "version": "1"
+}

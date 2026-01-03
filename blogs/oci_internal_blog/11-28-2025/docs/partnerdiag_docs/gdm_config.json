@@ -1,0 +1,27 @@
+{
+    "node": {
+        "events": [
+            {
+                "event": "GdmParsingEvent",
+                "timeMs": 20000
+            },
+            {
+                "event": "GdmSyncEvent",
+                "timeMs": 600000
+            },
+            {
+                "event": "GdmHeartBeatEvent",
+                "timeMs": 20000
+            },
+            {
+                "event": "GdmNvLinkRetryCnt",
+                "RetryCountNum": 50
+            },
+            {
+                "event": "GdmNvLinkRetryTimeOut",
+                "timeSec": 5
+            }
+        ]
+    },
+    "ImexPortNum": 50000
+}

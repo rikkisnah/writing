@@ -1,0 +1,85 @@
+What are regional SADC AI or data protection
+standards to align with
+Regional SADC (Southern African Development Community) standards for AI and data
+protection are centered around the SADC Model Law on Data Protection and evolving soft-law
+instruments on AI ethics and governance.
+
+SADC Model Law on Data Protection (2013)
+   Scope: Applies to both manual and automated processing of personal data by public and
+   private controllers permanently established in a member state. [1] [2]
+   Core Principles:
+       Lawfulness, fairness, and transparency of processing
+       Purpose limitation (data must be collected for explicit, legitimate purposes)
+       Data minimization and accuracy
+       Security and confidentiality safeguards
+       Accountability of the data controller
+   Controller Obligations:
+       Notification to and authorization from a national Data Protection Authority (DPA) for key
+       processing activities
+       Designation of a representative in member states for certain cross-border activities
+       Maintenance of records/logs and cooperation with DPA. [2] [1]
+   Data Subject Rights:
+       Access, rectification, deletion, temporary limitation of processing, and the right to object
+   Limits on Automated Decisions: Includes restrictions and safeguards around the use of
+   automated processing for significant decisions. [3] [1]
+   Cross-Border Transfers:
+       Prohibited to countries (including SADC members) that have not adopted the Model
+       Law unless the recipient ensures an adequate level of data protection. [2]
+   Enforcement:
+       Requires an independent protection authority, with powers for warnings, fines, notices,
+       and legal recourse for data subjects. [1] [2]
+Regional Soft-Law and Policy Instruments
+    Windhoek Statement on Artificial Intelligence (2022):
+        Signed by SADC ministers, this encourages capacity building, ethical AI, gender-
+        inclusive data and research, investment in infrastructure, and strong cross-border and
+        public-private partnerships. [4]
+    No Unified SADC AI Law:
+        Most countries (except South Africa's draft AI policy) handle AI mainly through data
+        governance and sectoral policies. The SADC Model Law is the key harmonization
+        reference for cross-border data compliance and fundamental rights. [5] [4]
+    Alignment with Continental Efforts:
+        SADC’s principles and standards are in line with the African Union’s Continental Strategy
+        for AI, which emphasizes fairness, accountability, explainability, and social benefit in AI
+        governance. [6]
+
+Alignment Recommendations
+For AI/data projects in Mauritius or Southern Africa:
+    Explicitly map compliance to the SADC Model Law’s core principles and data subject rights.
+    Implement data governance/process documentation, privacy by design, clear opt-outs for
+    automated decisions, and secure cross-border data flows only to countries with “adequate”
+    protections. [3] [1] [2]
+    Refer to the Windhoek Statement and AU/UNESCO guidelines for developing AI ethics
+    codes and sector policies. [7] [4] [6]
+These standards ensure that any compliance plan for Mauritius will also be regionally
+interoperable and meet best practices for Southern Africa.
+                                                   ⁂
+
+ 1. https://www.itu.int/en/ITU-D/Projects/ITU-EC-ACP/HIPSSA/Documents/In-country support
+    documents/SADC Model Law Presentation Version 1.pdf
+ 2. https://fpf.org/wp-content/uploads/2024/02/Africa-RECs-Report-.pdf
+ 3. https://www.mediadefence.org/ereader/publications/introductory-modules-on-digital-rights-and-freed
+    om-of-expression-online/module-4-data-privacy-and-data-protection/data-protection/
+ 4. https://www.trust.org/toolkit/part-2-emerging-ai-governance-in-africa/governance-in-southern-africa/
+ 5. https://dialzara.com/blog/ai-data-privacy-laws-in-africa-comparative-study
+ 6. https://fpf.org/blog/global/the-african-unions-continental-ai-strategy-data-protection-and-governance
+    -laws-set-to-play-a-key-role-in-ai-regulation/
+ 7. https://www.unesco.org/en/articles/unesco-pilots-ai-readiness-assessments-across-southern-africa
+ 8. https://aercafrica.org/old-website/wp-content/uploads/2022/02/DG003.pdf
+ 9. https://www.apc.org/sites/default/files/Privacy_and_personal_data_protection_in_Africa_advocacy_toolk
+    it.pdf
+10. https://digital.nemko.com/regulations/ai-regulation-in-south-africa
+11. https://www.mediadefence.org/resource-hub/data-privacy-protection-sub-saharan-africa/
+12. https://iafrica.com/south-africa-urged-to-lead-on-ai-governance-ahead-of-2025-g20-summit/
+13. https://www.legal500.com/developments/thought-leadership/ai-regulation-and-policy-in-africa/
+14. https://www.hoganlovells.com/en/publications/overview-of-data-protection-laws-in-africa
+15. https://www.tci-sa.co.za/2025/09/04/ai-regulatory-landscape-what-organisations-need-to-know-to-st
+    ay-compliant/
+16. https://www.brookings.edu/articles/building-regional-capacity-for-ai-safety-and-security-in-africa/
+17. https://pmc.ncbi.nlm.nih.gov/articles/PMC11479556/
+18. https://www.sadc.int/latest-news/media-sadc-region-urged-harness-potential-ai-and-emerging-digital
+    -technologies-drive
+19. https://iapp.org/news/a/evaluating-data-privacy-across-africa-toward-a-unified-gdpr-inspired-frame
+    work
+20. The-Race-for-AI-Leadership_MF_Article.pdf
+21. https://open.uct.ac.za/items/8f4f7f4e-f460-4989-a1a0-8098c4ab4f61
+

@@ -1,0 +1,205 @@
+#!/bin/bash
+
+# NVIDIA_COPYRIGHT_BEGIN
+#
+# Copyright 2024-2025 by NVIDIA Corporation.  All rights reserved.  All
+# information contained herein is proprietary and confidential to NVIDIA
+# Corporation.  Any use, reproduction, or disclosure without the written
+# permission of NVIDIA Corporation is prohibited.
+#
+# NVIDIA_COPYRIGHT_END
+
+set -euo pipefail
+
+
+readonly TESTSPEC_FILE="gpu_fieldiag.testspec.json"
+readonly MODS_MAPPING_FILE="mods_mapping.json"
+readonly DEFAULT_ONEDIAG_EXE="onediagfield"
+
+# Globals to store processed arguments
+ARG_DIAGEXE="-"
+ARG_DEVICE="-"
+ARG_PCIID="-"
+ARG_PCIDEVS="-"
+ARG_DISABLE_AUTO_REPAIR=false
+declare -a ARG_GPUFD_ARGS_ARRAY=()
+
+# Keep track of extra arguments for onediag
+ONEDIAG_ARGS=""
+
+# Store command line arguments
+declare -a CMDLINE_ARGS=("$@")
+
+function main() {
+    goto_dgx_dir
+    check_mapping_file
+
+    if [[ $# -gt 1 && $1 == "--" ]]; then
+        # This script exposes certain functionalities to other parts of the diagnostic software
+        # Usage: fdmain -- [args...]
+        shift
+        run_as_utility
+    else
+        run_as_gpufd
+    fi
+}
+
+function run_as_utility() {
+    local utility_name=$1
+    shift
+
+    if [[ "${utility_name}" == "makespec" ]]; then
+        process_args
+        gen_testspec
+    fi
+}
+
+function run_as_gpufd() {
+    process_args
+    gen_testspec > "${TESTSPEC_FILE}"
+    run_onediag "${ARG_DIAGEXE}"
+    cleanup_testspec
+}
+
+function check_mapping_file() {
+    if [[ ! -r "${MODS_MAPPING_FILE}" ]]; then
+        echo "Error: Cannot find or read file '${MODS_MAPPING_FILE}'."
+        exit 1
+    fi
+}
+
+function goto_dgx_dir() {
+    local script_path=$(dirname $(readlink -f "$0"))
+    local onediag_dir="${script_path}/onediag"
+    if [[ -d "${onediag_dir}" ]]; then
+        cd "${onediag_dir}"
+    else
+        cd "${script_path}"
+    fi
+}
+
+function gen_testspec_arg_scalar() {
+    local arg_name="$1"
+    local arg_value="$2"
+    echo "                \"${arg_name}\": ${arg_value},"
+}
+
+function gen_testspec_arg_string() {
+    local arg_name="$1"
+    local arg_value="$2"
+    echo "                \"${arg_name}\": \"${arg_value}\","
+}
+
+function gen_testspec_arg_string_array() {
+    local arg_name="$1"
+    shift
+    local arg_values=("$@")
+    printf -v arg_values_str '"%s", ' ${arg_values[@]}
+
+    echo "                \"${arg_name}\": ["
+    echo "                    ${arg_values_str%, }"
+    echo "                ],"
+}
+
+function gen_testspec() {
+    local pci_devices_arr=()
+    if [[ "${ARG_PCIDEVS}" != "-" ]]; then
+        # Convert comma-separated string to array
+        IFS=',' read -r -a pci_devices_arr <<< "${ARG_PCIDEVS}"
+    fi
+
+    cat << EOF
+{
+    "actions": [
+        {
+            "virtual_id": "gpu_fieldiag",
+            "args": {
+EOF
+
+    if [[ "${ARG_DEVICE}" != "-" ]]; then
+        gen_testspec_arg_scalar "device" "${ARG_DEVICE}"
+    fi
+    if [[ "${ARG_PCIID}" != "-" ]]; then
+        gen_testspec_arg_string "pciid" "${ARG_PCIID}"
+    fi
+    if [[ ${#pci_devices_arr[@]} -gt 0 ]]; then
+        gen_testspec_arg_string_array "pci_devices" "${pci_devices_arr[@]}"
+    fi
+    if [[ ${#ARG_GPUFD_ARGS_ARRAY[@]} -gt 0 ]]; then
+        gen_testspec_arg_string_array "mods_args" "${ARG_GPUFD_ARGS_ARRAY[@]}"
+    fi
+
+    echo '                "mods_mapping":'
+    cat "${MODS_MAPPING_FILE}" | sed '/^[[:space:]]*$/d;s/^/                    /g'
+
+    cat << EOF
+            },
+            "action": "gpu_fieldiag"
+        }
+    ],
+    "version": "1"
+}
+EOF
+}
+
+function process_args() {
+    # Reset globals before processing
+    ARG_DIAGEXE="-"
+    ARG_DEVICE="-"
+    ARG_PCIID="-"
+    ARG_PCIDEVS="-"
+    ARG_GPUFD_ARGS_ARRAY=()
+    ONEDIAG_ARGS=""
+
+    for arg in "${CMDLINE_ARGS[@]}"; do
+        case $arg in
+            onediag_exe=*)
+                ARG_DIAGEXE=$(echo "${arg}" | sed "s/onediag_exe=//")
+            ;;
+            device=*)
+                ARG_DEVICE=$(echo "${arg}" | sed "s/device=//")
+            ;;
+            pciid=*)
+                ARG_PCIID=$(echo "${arg}" | sed "s/pciid=//")
+            ;;
+            pci_devices=*)
+                ARG_PCIDEVS=$(echo "${arg}" | sed "s/pci_devices=//")
+            ;;
+            onediag_passthrough_args=*)
+                ONEDIAG_ARGS="${arg#*=}"
+            ;;
+            disable_auto_repair)
+                ARG_DISABLE_AUTO_REPAIR=true
+            ;;
+            *)
+                ARG_GPUFD_ARGS_ARRAY+=("${arg}")
+            ;;
+        esac
+    done
+}
+
+function run_onediag() {
+    local exe_file=$([[ "$1" != "-" ]] && echo "$1" || echo "${DEFAULT_ONEDIAG_EXE}")
+    local disable_auto_repair_arg=""
+
+    if [[ ! -x "${exe_file}" ]]; then
+        echo "Error: Cannot find OneDiag launcher executable '${exe_file}'."
+        exit 1
+    fi
+
+    if [[ "${ARG_DISABLE_AUTO_REPAIR}" == true ]]; then
+        disable_auto_repair_arg="--check_repairability_only"
+    fi
+
+    if [[ -n "${ONEDIAG_ARGS}" ]]; then
+        ./"${exe_file}" --force_product=generic --auto_repair_for_univ_gpufd ${disable_auto_repair_arg} --run_spec="${TESTSPEC_FILE}" ${ONEDIAG_ARGS}
+    else
+        ./"${exe_file}" --force_product=generic --auto_repair_for_univ_gpufd ${disable_auto_repair_arg} --run_spec="${TESTSPEC_FILE}"
+    fi
+}
+
+function cleanup_testspec() {
+    rm -f "${TESTSPEC_FILE}"
+}
+
+main $@

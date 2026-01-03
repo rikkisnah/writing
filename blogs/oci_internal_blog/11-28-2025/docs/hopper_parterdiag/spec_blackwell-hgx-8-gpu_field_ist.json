@@ -1,0 +1,242 @@
+{
+    "global_args": {
+        "DiagType": "field",
+        "EnableGpuNvSwitchBDFCheck": false,
+        "DisableNvlinkForPerGpuTests": true,
+        "DiagInfo": {
+            "DiagName": "HGX Field Diag",
+            "RunLevel": "IST"
+        },
+        "mods_execution_retry_count": 10,
+        "product_config" :
+        {
+            "Gpus": 8,
+            "RcListToRetryMods": [77, 210]
+        },
+        "invoke_hmc_redfish_api" : true,
+        "force_chassis": "dgxa100next",
+        "bmc_redfish_credentials" :
+        {
+            "username" : "Administrator",
+            "password" : "superuser"
+        },
+        "bmc_ssh_credentials" :
+        {
+            "username" : "sysadmin",
+            "password" : "superuser"
+        },
+        "bmc": {
+            "customCommands": {
+                "disableSensorMonitor":
+                [
+                    {
+                        "command":"0x3c 0x85 0",
+                        "delay" : "7"
+                    }
+                ],
+                "enableSensorMonitor":
+                [
+                    {
+                        "command":"0x3c 0x85 1",
+                        "delay" : "7"
+                    }
+                ],
+                "enableIstPrcKnob": [
+                    {
+                        "redfish_raw_commands_template": {
+                            "template": {
+                                "requests_util": "PATCH",
+                                "api": "redfish/v1/Systems/HGX_Baseboard_0/Processors/GPU_SXM_<GPU_IDX>",
+                                "headers": {
+                                    "Content-Type": "application/json"
+                                },
+                                "json": {
+                                    "Oem": {
+                                        "Nvidia": {
+                                            "InbandReconfigPermissions":{
+                                                "InSystemTest":{
+                                                    "AllowOneShotConfig": true
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "expected_data": {
+                                    "redfish/v1/Systems/HGX_Baseboard_0/Processors/GPU_SXM_<GPU_IDX>": {
+                                        "keys": ["Oem", "Nvidia", "InbandReconfigPermissions", "InSystemTest", "AllowOneShotConfig"],
+                                        "value": true
+                                    }
+                                }
+                            },
+                            "keywords": {
+                                "GPU_IDX": ["1", "2", "3", "4", "5", "6", "7", "8"]
+                            }
+                        }
+                    }
+                ],
+                "disableIstPrcKnob": [
+                    {
+                        "redfish_raw_commands_template": {
+                            "template": {
+                                "requests_util": "PATCH",
+                                "api": "redfish/v1/Systems/HGX_Baseboard_0/Processors/GPU_SXM_<GPU_IDX>",
+                                "headers": {
+                                    "Content-Type": "application/json"
+                                },
+                                "json": {
+                                    "Oem": {
+                                        "Nvidia": {
+                                            "InbandReconfigPermissions":{
+                                                "InSystemTest":{
+                                                    "AllowOneShotConfig": false
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "expected_data": {
+                                    "redfish/v1/Systems/HGX_Baseboard_0/Processors/GPU_SXM_<GPU_IDX>": {
+                                        "keys": ["Oem", "Nvidia", "InbandReconfigPermissions", "InSystemTest", "AllowOneShotConfig"],
+                                        "value": false
+                                    }
+                                }
+                            },
+                            "keywords": {
+                                "GPU_IDX": ["1", "2", "3", "4", "5", "6", "7", "8"]
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        "CheckGpuHealthnessBeforeTests": true,
+        "tdm": {
+            "enable": true,
+            "tdm_manifest": "../tests/tools/tdm/"
+        }
+    },
+    "actions": [
+        {
+            "category": ["ist_logic", "ist_sram", "ist_dram"],
+            "virtual_id": "inforom",
+            "action": "inforom"
+        },
+        {
+            "virtual_id": "Enable_IST",
+            "args": {
+                "set_oob_gpu_prc_knob": true,
+                "use_redfish_for_prc_knob": true,
+                "continue_on_setup_error": true,
+                "redfish_cmd_retry_count": 5,
+                "skip_ist_test": true,
+                "timeout_sec": 300
+            },
+            "osm": {
+                "triggers": {
+                    "DGX.000000000008": "EXIT",
+                    ".*": "NEXT"
+                }
+            },
+            "category": ["ist_logic", "ist_sram", "ist_dram"],
+            "action": "ist"
+        },
+        {
+            "virtual_id": "IST_Test_122",
+            "category": ["ist_logic"],
+            "args": {
+                "test_pattern_path": "./DFX_GB100_IST_Field_Images_b100.2.0/top_level/test_122_top_level.cfg",
+                "gen_adaptive_spec": true,
+                "args":[
+                "test_name=122",
+                "share_memory"
+                ],
+                "timeout_sec": 1500
+            },
+            "action": "ist"
+        },
+        {
+            "virtual_id": "IST_Test_125",
+            "category": ["ist_logic"],
+            "args": {
+                "test_pattern_path": "./DFX_GB100_IST_Field_Images_b100.2.0/top_level/test_125_top_level.cfg",
+                "gen_adaptive_spec": true,
+                "args":[
+                "test_name=125",
+                "share_memory"
+                ],
+                "timeout_sec": 1500
+            },
+            "action": "ist"
+        },
+        {
+            "virtual_id": "IST_Test_133",
+            "category": ["ist_logic"],
+            "args": {
+                "test_pattern_path": "./DFX_GB100_IST_Field_Images_b100.2.0/top_level/test_133_top_level.cfg",
+                "gen_adaptive_spec": true,
+                "args":[
+                "test_name=133",
+                "share_memory"
+                ],
+                "timeout_sec": 1500
+            },
+            "action": "ist"
+        },
+        {
+            "virtual_id": "IST_Test_314",
+            "category": ["ist_sram"],
+            "args": {
+                "test_pattern_path": "./DFX_GB100_IST_Field_Images_b100.2.0/top_level/test_314_top_level.cfg",
+                "gen_adaptive_spec": true,
+                "args":[
+                "test_name=314",
+                "share_memory"
+                ],
+                "timeout_sec": 1500
+            },
+            "action": "ist"
+        },
+        {
+            "virtual_id": "IST_Test_316",
+            "category": ["ist_sram"],
+            "args": {
+                "test_pattern_path": "./DFX_GB100_IST_Field_Images_b100.2.0/top_level/test_316_top_level.cfg",
+                "gen_adaptive_spec": true,
+                "args":[
+                "test_name=316",
+                "share_memory"
+                ],
+                "timeout_sec": 1500
+            },
+            "action": "ist"
+        },
+        {
+            "args": {
+                "restore_oob_gpu_prc_knob": true,
+                "use_redfish_for_prc_knob": true,
+                "redfish_cmd_retry_count": 5,
+                "skip_ist_test": true,
+                "timeout_sec": 800
+            },
+            "category": ["ist_logic", "ist_sram", "ist_dram"],
+            "virtual_id": "RestoreGpu",
+            "action": "ist"
+        },
+        {
+            "virtual_id" : "ResetGpu",
+            "args" : {
+                "args" : [
+                    "secondary_bus_reset",
+                    "skip_tests",
+                    "nvlink_force_disable",
+                    "json"
+                ],
+                "timeout_sec" : 450,
+                "multiinstance" : true
+            },
+            "category": ["ist_logic", "ist_sram", "ist_dram"],
+            "action" : "custommods"
+        }
+    ],
+    "version": "2"
+}

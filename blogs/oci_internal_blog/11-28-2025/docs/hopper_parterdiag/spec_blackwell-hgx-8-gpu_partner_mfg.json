@@ -1,0 +1,432 @@
+{
+    "version": "2",
+    "global_args": {
+        "product_config" : {
+            "UseSBRBeforeTests": false
+        },
+        "EnableGpuNvSwitchBDFCheck" : false,
+        "ibnetdiscover_ca_name" : "auto",
+        "bail_out_on_low_or_zero_rpm": true,
+        "psu_load_balance_attempts": 5,
+        "fail_for_psu_load_imbalance": false,
+        "fail_for_fatal_bmc_events": true,
+        "fail_for_sel_pcie_error_events": true,
+        "DisableNvlinkForPerGpuTests": true,
+        "mods_execution_retry_count" : 4,
+        "check_for_recoveries": false,
+        "nvpex2_delay_sec": 5,
+        "nvflash_property_query_retries": 0,
+        "num_hot_reset": 0,
+        "DiagType": "partner_mfg",
+        "force_chassis": "dgxa100next",
+        "CheckGpuHealthnessBeforeTests": true,
+        "bmc_redfish_credentials" :
+        {
+            "username" : "Administrator",
+            "password" : "superuser"
+        },
+        "bmc_ssh_credentials" :
+        {
+            "username" : "sysadmin",
+            "password" : "superuser"
+        },
+        "bmc": {
+            "customCommands": {
+                "disableSensorMonitor":
+                [
+                    {
+                        "command":"0x3c 0x85 0",
+                        "delay" : "7"
+                    }
+                ],
+                "enableSensorMonitor":
+                [
+                    {
+                        "command":"0x3c 0x85 1",
+                        "delay" : "7"
+                    }
+                ]
+            }
+        },
+        "tdm": {
+            "enable": true,
+            "tdm_manifest": "../tests/tools/tdm/"
+        }
+    },
+    "actions": [
+        {
+            "virtual_id": "inforom",
+            "action": "inforom"
+        },
+        {
+            "virtual_id": "checkinforom",
+            "action": "checkinforom"
+        },
+        {
+            "virtual_id": "inventory",
+            "test_only_tray":0,
+            "args": {
+                "use_json_file_from_command_line": true,
+                "sku_to_sku_json_file_map":
+                {
+                    "G525-0220": "sku_blackwell-hgx-8-gpu_field.json",
+                    "G525-0225": "sku_blackwell-hgx-8-gpu_sku_225_field.json",
+                    "G525-0230": "sku_blackwell-hgx-8-gpu_sku_230_field.json"
+                },
+                "pass_on_fail_firmware_recipe": true,
+                "verify_firmware_recipe": true
+            },
+            "action": "inventory"
+        },
+        {
+            "virtual_id": "pcie",
+            "args": {
+                "pex": {
+                    "gpuPcieLinks": [
+                        {
+                            "depth": 0,
+                            "speed": 32000,
+                            "upstreamWidth": 16,
+                            "downstreamWidth": 16
+                        }
+                    ],
+                    "nvSwitchPcieLinks": []
+                },
+                "powercable": {
+                    "skip_test": true
+                },
+                "nvlink": {
+                    "skip_test": true
+                },
+                "i2c": {
+                    "skip_test": true
+                },
+                "infiniband": false,
+                "ssd": false,
+                "timeout_sec": 900
+            },
+            "action": "connectivity"
+        },
+        {
+            "virtual_id": "connectivity",
+            "auto_gen_test_args": true,
+            "args": {
+                "nvlink" : {
+                    "args" : [ "infiniband_ca_name=mlx5_0" ]
+                },
+                "infiniband": {
+                    "linkSpeedWidth": false,
+                    "physicalLink": [
+                        "mlx5_2",
+                        "mlx5_3"
+                    ],
+                    "linkDevsToCheck": ["mlx5_0", "mlx5_1", "mlx5_2", "mlx5_3"],
+                    "linkNumber": 4,
+                    "raw_physical_ber_threshold": 1e-0,
+                    "effective_physical_ber_threshold": 1e-0,
+                    "symbol_ber_threshold": 1e-0,
+                    "symbol_error_threshold": 99999999,
+                    "check_pcie": false
+                },
+                "pex": {
+                    "skip_test": true
+                },
+                "powercable": {
+                    "skip_test": true
+                },
+                "i2c": {
+                    "skip_test": true
+                },
+                "ssd": false,
+                "timeout_sec": 4500
+            },
+            "osm": {
+                "triggers": {
+                    "MODS-(?!0+$)\\d+": "ConnectivityNvidiaBugReport",
+                    "DGX-(?!0+$)\\d+": "ConnectivityNvidiaBugReport",
+                    ".*": "nvlinkl1"
+                }
+            },
+            "action": "connectivity"
+        },
+        {
+            "args": {
+                "script": "bug_report/nvidia-bug-report.sh",
+                "timeout_sec": 600,
+                "args": [
+                ]
+            },
+            "virtual_id": "ConnectivityNvidiaBugReport",
+            "pass_on_fail": true,
+            "action": "custom"
+        },
+        {
+            "virtual_id": "nvlinkl1",
+            "args": {
+                "concurrent": {
+                    "args": [ "spec=nvlinkTestSpec_l1" ],
+                    "override_spec_in_args": true
+                },
+                "singleinstance": {
+                    "skip_test": true
+                },
+                "timeout_sec": 3600
+            },
+            "action": "nvlink",
+            "skip_test": true
+        },
+        {
+            "virtual_id": "ThetaBgStart",
+            "action": "theta",
+            "auto_gen_test_args": true,
+            "args": {
+                "bgaction": "start",
+                "dev": ["/dev/mst/mt4129_pciconf0.2",
+                        "/dev/mst/SW_MT54004.*0.1,mlx5.*"],
+                "query_delay": 20,
+                "collect_data": true,
+                "mst_devices": ["mlx5_0", "mlx5_1"]
+            }
+        },
+        {
+            "virtual_id": "EyeGradeBgStart",
+            "action": "cxeyegrade",
+            "auto_gen_test_args": true,
+            "args": {
+                "bgaction": "start",
+                "bg_query_delay": 20,
+                "devices": {
+                    "/dev/mst/SW_MT54004.*": [
+                        {
+                            "port_type": "NETWORK",
+                            "port": "19/0",
+                            "fom_threshold": 70
+                        },
+                        {
+                            "port_type": "NETWORK",
+                            "port": "19/1",
+                            "fom_threshold": 70
+                        },
+                        {
+                            "port_type": "NETWORK",
+                            "port": "20/0",
+                            "fom_threshold": 70
+                        },
+                        {
+                            "port_type": "NETWORK",
+                            "port": "20/1",
+                            "fom_threshold": 70
+                        }
+                    ],
+                    "/dev/mst/mt4129_pciconf0.2": [
+                        {
+                            "port_type": "PCIE",
+                            "fom_threshold": 70,
+                            "depth": 0,
+                            "pcie_index": 0,
+                            "node": 0
+                        }
+                    ],
+                    "/dev/mst/mt4129_pciconf0.3": [
+                        {
+                            "port_type": "PCIE",
+                            "fom_threshold": 70,
+                            "depth": 0,
+                            "pcie_index": 0,
+                            "node": 0
+                        }
+                    ]
+                },
+                "nbu_device": "MT54004"
+            }
+        },
+        {
+            "virtual_id": "ibstressmad",
+            "auto_gen_test_args": true,
+            "args": {
+                "tx_rx_mst_device_map": {
+                    "mlx5_0": {
+                        "mst_device": "mlx5_1",
+                        "path": [0,1,74,73]
+                    }
+                },
+                "test_loops": 5,
+                "time_limit_s": 500
+            },
+            "action": "ibstressmad"
+        },
+        {
+            "virtual_id": "EyeGradeBgStop",
+            "action": "cxeyegrade",
+            "args": {
+                "bgaction": "stop"
+            }
+        },
+        {
+            "virtual_id": "ThetaBgStop",
+            "action": "theta",
+            "args": {
+                "bgaction": "stop",
+                "collect_data": true
+            }
+        },
+        {
+            "virtual_id": "ExtThetaBgStart",
+            "action": "theta",
+            "args": {
+                "bgaction": "start",
+                "dev": ["/dev/mst/mt41692_pciconf0",
+                        "/dev/mst/mt41692_pciconf1",
+                        "/dev/mst/mt4129_pciconf1",
+                        "/dev/mst/mt4129_pciconf2"],
+                "query_delay": 20,
+                "collect_data": true
+            }
+        },
+        {
+            "virtual_id": "ExtEyeGradeBgStart",
+            "action": "cxeyegrade",
+            "args": {
+                "bgaction": "start",
+                "bg_query_delay": 20,
+                "devices": {
+                    "/dev/mst/mt41692_pciconf0": [
+                        {
+                            "port_type": "PCIE",
+                            "fom_threshold": 70,
+                            "depth": 0,
+                            "pcie_index": 0,
+                            "node": 0
+                        }
+                    ],
+                    "/dev/mst/mt41692_pciconf1": [
+                        {
+                            "port_type": "PCIE",
+                            "fom_threshold": 70,
+                            "depth": 0,
+                            "pcie_index": 0,
+                            "node": 0
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "virtual_id": "ExtIBStress",
+            "action": "ibstress",
+            "args": {
+                "timeout_sec": 900,
+                "link_layer_mode": "IB",
+                "test_mode": "concurrent",
+                "test_connect_mode": "cables",
+                "topology": {
+                    "mlx5_11": "mlx5_12"
+                },
+                "expected_pcie_id_ib_dev_map": {},
+                "rdma_over_ethernet_config": {},
+                "sub_tests":
+                {
+                    "ib_write_bw"  :
+                    {
+                        "expected_BW_Gbps": 1,
+                        "duration_secs": 30,
+                        "base_server_port": 18515,
+                        "server_port_offset": 100,
+                        "server_setup_timeout_secs": 5
+                    }
+                }
+            }
+        },
+        {
+            "virtual_id": "ExtEyeGradeBgStop",
+            "action": "cxeyegrade",
+            "args": {
+                "bgaction": "stop"
+            }
+        },
+        {
+            "virtual_id": "ExtThetaBgStop",
+            "action": "theta",
+            "args": {
+                "bgaction": "stop",
+                "collect_data": true
+            }
+        },
+        {
+            "virtual_id": "ExtIBconnectivity",
+            "args": {
+                "powercable": {
+                    "skip_test": true
+                },
+                "pex": {
+                    "skip_test": true
+                },
+                "nvlink" : {
+                    "skip_test": true
+                },
+                "infiniband": {
+                    "linkSpeedWidth": false,
+                    "check_physical_link": true,
+                    "physicalLink": [
+                        "mlx5_11", "mlx5_12"
+                    ],
+                    "cableSpeed": "IB-FDR",
+                    "cableWidth": "4x",
+                    "raw_physical_ber_threshold": 1e-0,
+                    "effective_physical_ber_threshold": 1e-0,
+                    "symbol_ber_threshold": 1e-0,
+                    "symbol_error_threshold": 99999999,
+                    "check_pcie": false,
+                    "check_link_number": false
+                },
+                "i2c": {
+                    "skip_test": true
+                },
+                "ssd": false,
+                "timeout_sec": 900
+            },
+            "action": "connectivity"
+        },
+        {
+            "action": "thermal",
+            "virtual_id": "thermal",
+            "auto_gen_test_args": true,
+            "args": {
+                "args": [ "infiniband_ca_name=mlx5_0" ],
+                "sleds": {
+                    "GPU": {
+                        "gpus": true,
+                        "willows": true
+                    },
+                    "CPU": {
+                        "cpus": false
+                    },
+                    "IO": {
+                        "infiniband": false,
+                        "infinibandmad": false,
+                        "ssd": false,
+                        "dimms": false
+                    }
+                },
+                "run_fm": {
+                    "run_fm_in_background": false
+                },
+                "timeout_sec": 3600
+            }
+        },
+        {
+            "virtual_id" : "ResetGpu",
+            "args" : {
+                "args" : [
+                    "secondary_bus_reset",
+                    "skip_tests",
+                    "nvlink_force_disable",
+                    "json"
+                ],
+                "timeout_sec" : 450,
+                "multiinstance" : true
+            },
+            "action" : "custommods"
+        }
+    ]
+}

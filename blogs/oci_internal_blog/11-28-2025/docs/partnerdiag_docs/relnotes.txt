@@ -1,0 +1,396 @@
+================================================================================
+                            GB200_NVL_72_2_4 RELEASE NOTES
+================================================================================
+Diag Version: 629-24972-4975-FLD-50448-rev3.tgz
+Date 9/25/2025
+
+* Supports 1.3.00GA Software Release
+* Improved error reporting for Fabric probe errors.
+* Added new log file that captures command line input (partnerdiag.log)
+* Added warning prints if running diagnostics without sudo privileges
+* Automatically generate configuration for optimal trunk link stress and added --skip_trunk_link for 36x2 configurations
+* Added ability to run partner diagnostics from a folder other that where partnerdiag is contained
+* Added inforom test
+* Added IPv6 support to GDM, DRA, and IMEX and improved the robustness of setting loopback IP addresses for GDM and DRA servers
+* Fixed GPU serial number missing issue in field diagnostics.
+* Primary node diag will now always pull logs from all secondary nodes
+* Improved test failure attribution with repair enabled
+* Fixed false reporting of auto-repair failures
+* Fixed reporting of unexpected device interrupts without indication of problematic link
+* Removed dependencies on IPv4 loopback addresses
+* Aligned field diagnostics nvlink bandwidth stress traffic with partner manufacturing diagnostics
+
+Known Issues:
+* Intermittent failures due to missing heartbeat may occur due to early test exit on a single node, causing GDM to kill all mods instances.
+* Corrupted data from Prometheus might cause false diag failures of "Prometheus: field larger than field limit" or "Prometheus: argument of type 'NoneType'".
+
+--------------------------------------------------------------------------------
+
+Diag Version: 629-24972-4975-FLD-43744-rev2.tgz
+Date 7/31/2025
+
+* Supports 1.2.2 Software Release
+* Added enviroment check to ensure the partner diagnostics are being run in a proper environment
+* Enhanced failure attribution and logging for easier debugging
+* Added switch tray DRAM tests for system memory stress and error checking.
+* Fixed NMX-T issue where querying did not work in managed mode.
+* Updated minimum GLIBC requirement from 2.12 to 2.23 for aarch64
+
+Note: NVIDIA recommends users to run all L11 compute tray tests in a single run of the partner diagnostics. 
+      Previous limitations requiring users to execute tests individually have been resolved.
+
+--------------------------------------------------------------------------------
+Diag Version: 629-24972-4975-FLD-43566_rev9
+Date 7/03/2025
+
+* Added enviroment check to ensure the partner diagnostics are being run in a proper environment
+* Enhanced failure attribution and logging for easier debugging
+* Added retry mechanisms and automatic repair logic to improve test reliability
+* Added NvlBwStress610Pulsy test back. This test should only be run on 0.9.11 and later firmware.
+* Fixed GDM race condition causing SIGPIPE errors.
+* Reduced GLIBC dependency to support 2.17 and later on aarch64
+
+Note: NVIDIA recommends users to run all L11 compute tray tests in a single run of the partner diagnostics. 
+      Previous limitations requiring users to execute tests individually have been resolved.
+--------------------------------------------------------------------------------
+Diag Version: 629-24972-4975-FLD-43242-rev6
+Date 6/3/2025
+
+* Supports 1.1.00 Software Release
+* Fix issue where the primary diag uploads the secondary diag with the incorrect CPU architecture
+* Added gdm_port argument in spec json to specify the port in managed mode.
+* Improved ability to find open ports for GDM and DRA.
+* Fixed CableCardridgeEepromCheck test so switch node reboot is no longer required.
+* Added CollectInventory test for compute and switch nodes.
+	- CollectInventory should be run with individual tests for failure attribution. Example: --test=CollectInventory,Connectivity
+* Improved error reporting for Connectivity
+* Fixed failures when running the diagnostics in managed mode.
+* Added hostname to peer attribution in "notes" field.
+* Added test_target_node_type field to spec json to specify whether the diag should target the compute or switch trays. See the Partner Diagnostics user guide for usage information.
+* Removed unnecessary print statements for log downloads
+* Fix CableCardridgeEepromCheck to no longer check reserved bytes.
+* Added option to specify target frequencies for powersync tests.
+* Added option to specify polling interval of GPU power and thermal telemetry
+* Fixed portdownreason not found.
+* Added support to prometheus for checking AVG BLER1
+* Improved prometheus output
+* Added nvlink_default_setting argument to allow backwards compatability with firmware earlier than 1.1.00
+* Fixed test progress reporting in NvlinkBwStress
+* Added fabric probe check in the Connectivity test to fix Cuda initialization failure and NVRM invalid state or config and prints for failing cases.
+* Added support for getting link down reason
+* Added support for abstract sockets in gdm
+* Added support for printing failing GPU information for overtemp events
+* Improved NETIR interrupt decoding and output
+* Added support to get the tray ID from IPMItool
+* Fixed issue causing summary.json generation failure.
+* Fixed failures in chkoccurrences due to non-UTF8 characters
+
+--------------------------------------------------------------------------------
+Diag Version: 629-24972-4975-FLD-42795_6
+Date 3/25/2025
+
+* Supports 0.9.09 Software Release with NVLink PHY improvements
+* Added Cable Cartridge FRU EEPROM test for compute and switch trays
+* Enabled Prometheus to perform NVSwitch NVLink error checks during L11 rack compute tray diagnostics
+* Removed NvlBwStress610Pulsy test.
+
+Known Issues:
+* Running the CableCartridgeEepromCheck will leave the switch tray firmware in an un-usable state. Users should perform a reboot of the rack to recover the switch trays.
+* Running the partner diagnostics package with spec JSON files from previous releases might cause unexpected behaviors due to modification of argument behaviors.
+	-Users should always use the spec JSON packaged with the corresponding diagnostics release. 
+* When running the diagnostics on the switch trays, the node that is running NMX-C must be the first node listed in the spec JSON file.
+* The diagnostics might fail to specify the failing node in the instance that the diagnostics crash. Users should review the output.log for the corresponding test for failure attribution.
+* nvoshealthcheck test has intermittent failure with error "Switch device information is not found". It is recommended that the user performs a power cycle and re-runs the test.
+* When running multiple tests in a single diagnostics run, a failure in a test might propagate to the following tests in the run.  
+	Workaround:
+		Run tests individually using “–test=” (ex, “--test=Connectivity”) to see correct results of subsequent tests after a failing test.  
+		Command: 
+			./partnerdiag --mfg --run_spec=spec_gb200_nvl_72_2_4_compute_nodes_partner_mfg.json --primary_diag_ip=<IP> --topology=<Nvlink Topology json> --test=<virtual_id> 
+	
+			Where <virtual_id> is one of the following 
+				- Connectivity 
+				- NvlBwStress 
+				- CpuGpuSyncPulsePower 
+				- ThermalSteadyState 
+	**Note - this occurs only if a real failure occurs during the run and will not impact passing runs 
+* Increased test time for SysGUID workaround and VF curve generation issue.
+
+--------------------------------------------------------------------------------
+Diag Version: 629-24972-4975-FLD-42639_2
+Date 3/11/2025
+
+* Fixed to incorrect configuration file in 629-24972-4975-FLD-42639
+
+--------------------------------------------------------------------------------
+Diag Version: 629-24972-4975-FLD-42639
+Date 3/11/2025
+
+* Supports 0.9.05 Software Release with NVLink PHY improvements
+* Diagnostics will automatically generate the topology files based on the information provided in the spec JSON file if no topology file is provided.
+* Reduced log file size.
+* Reduced secondary diagnostics upload time by copying only the architecture specific files to the nodes.
+* Added field in the spec JSON to specify the rack slot ID in cases where the BMC in not available.
+* Fixed invalid error reporting of "Fielddiag exited with status 1"
+
+Known Issues:
+* Running the partner diagnostics package with spec JSON files from previous releases might cause unexpected behaviors due to modification of argument behaviors.
+	-Users should always use the spec JSON packaged with the corresponding diagnostics release. 
+* When running the diagnostics on the switch trays, the node that is running NMX-C must be the first node listed in the spec JSON file.
+* The diagnostics might fail to specify the failing node in the instance that the diagnostics crash. Users should review the output.log for the corresponding test for failure attribution.
+* The diagnostics require improved failure attribution
+* When running multiple tests in a single diagnostics run, a failure in a test might propagate to the following tests in the run.  
+	Workaround:
+		Run tests individually using “–test=” (ex, “--test=Connectivity”) to see correct results of subsequent tests after a failing test.  
+		Command: 
+			./partnerdiag --mfg --run_spec=spec_gb200_nvl_72_2_4_compute_nodes_partner_mfg.json --primary_diag_ip=<IP> --topology=<Nvlink Topology json> --test=<virtual_id> 
+	
+			Where <virtual_id> is one of the following 
+				- Connectivity 
+				- NvlBwStress 
+				- CpuGpuSyncPulsePower 
+				- ThermalSteadyState 
+	**Note - this occurs only if a real failure occurs during the run and will not impact passing runs 
+* Increased test time for SysGUID workaround and VF curve generation issue.
+
+--------------------------------------------------------------------------------
+Diag Version: 629-24972-4975-FLD-42399
+Date 2/25/2025
+
+* Supports 0.9.00 Software Release
+* Increase Nvlink Bandwidth Stress Duration
+* Added test for simultaneous nvlink bandwidth stress and compute workload
+* Added network support features:
+	- Removed login credentials from logs
+	- Added support for key-based authentication
+	- Added support for nodes with multipe IPs
+* Improve workloads in CpuGpuPulseSync
+* Increase duration of ThermalSteadyState test
+* Added prometheus telemetry to log nvlink errors reported by the switch tray.
+* Improve failure attribution:
+	- Corrected GPU indexing
+	- Fixed unexpected interrupts causing nodes to report timeout
+	- Combined stderr and stdout into a single output log
+* Stability improvements to reduce crashes.
+* Add checks to account for environmental changes
+
+Known Issues:
+* Running the partner diagnostics package with spec JSON files from previous releases might cause unexpected behaviors due to modification of argument behaviors.
+	-Users should always use the spec JSON packaged with the corresponding diagnostics release. 
+* When running the diagnostics on the switch trays, the node that is running NMX-C must be the first node listed in the spec JSON file.
+* The diagnostics might fail to specify the failing node in the instance that the diagnostics crash. Users should review the output.log for the corresponding test for failure attribution.
+* The diagnostics require improved failure attribution
+* When running multiple tests in a single diagnostics run, a failure in a test might propagate to the following tests in the run.  
+	Workaround:
+		Run tests individually using “–test=” (ex, “--test=Connectivity”) to see correct results of subsequent tests after a failing test.  
+		Command: 
+			./partnerdiag --mfg --run_spec=spec_gb200_nvl_72_2_4_compute_nodes_partner_mfg.json --primary_diag_ip=<IP> --topology=<Nvlink Topology json> --test=<virtual_id> 
+	
+			Where <virtual_id> is one of the following 
+				- Connectivity 
+				- NvlBwStress 
+				- CpuGpuSyncPulsePower 
+				- ThermalSteadyState 
+	**Note - this occurs only if a real failure occurs during the run and will not impact passing runs 
+* Increased test time for SysGUID workaround and VF curve generation issue.
+
+--------------------------------------------------------------------------------
+Diag Version: 629-24972-XXXX-FLD-42249
+Date 2/11/2025
+
+* Supports 0.9.00RC Software Release
+* Updated NVLink failure critera based on latest metrics from NVIDIA validation.
+* Fixed FECS uCode failure and improved timeouts
+* Improved stabililty and failure attribution when the diagnostics fail from application crashes or unexpected device interrupts.
+
+Known Issues:
+* Running the partner diagnostics package with spec JSON files from previous releases might cause unexpected behaviors due to modification of argument behaviors.
+	-Users should always use the spec JSON packaged with the corresponding diagnostics release. 
+* When running the diagnostics on the switch trays, the node that is running NMX-C must be the first node listed in the spec JSON file.
+* The diagnostics might fail to specify the failing node in the instance that the diagnostics crash. Users should review the output.log for the corresponding test for failure attribution.
+* The diagnostics require improved failure attribution
+* When running multiple tests in a single diagnostics run, a failure in a test might propagate to the following tests in the run.  
+	Workaround:
+		Run tests individually using “–test=” (ex, “--test=Connectivity”) to see correct results of subsequent tests after a failing test.  
+		Command: 
+			./partnerdiag --mfg --run_spec=spec_gb200_nvl_72_2_4_compute_nodes_partner_mfg.json --primary_diag_ip=<IP> --topology=<Nvlink Topology json> --test=<virtual_id> 
+	
+			Where <virtual_id> is one of the following 
+				- Connectivity 
+				- NvlBwStress 
+				- CpuGpuSyncPulsePower 
+				- ThermalSteadyState 
+	**Note - this occurs only if a real failure occurs during the run and will not impact passing runs 
+* Increased test time for SysGUID workaround and VF curve generation issue.
+
+--------------------------------------------------------------------------------
+Diag Version: 629-24972-XXXX-FLD-42237
+Date 2/7/2025
+
+* Compatible with 0.8.00 firmware package. 
+* Fix FECS uCode issue causing failues on certain GPUs.
+
+Known Issues: 
+* When running the diagnostics on the switch trays, the node that is running NMX-C must be the first node listed in the spec JSON file.
+* A FECS uCode failure might occur on some nodes. This failure is generally consistent on specific GPUs
+* The diagnostics might fail to specify the failing node in the instance that the diagnostics crash. Users should review the output.log for the corresponding test for failure attribution.
+* The diagnostics require improved failure attribution
+* When running multiple tests in a single diagnostics run, a failure in a test might propagate to the following tests in the run.  
+	Workaround:
+		Run tests individually using “–test=” (ex, “--test=Connectivity”) to see correct results of subsequent tests after a failing test.  
+		Command: 
+			./partnerdiag --mfg --run_spec=spec_gb200_nvl_72_2_4_compute_nodes_partner_mfg.json --primary_diag_ip=<IP> --topology=<Nvlink Topology json> --test=<virtual_id> 
+	
+			Where <virtual_id> is one of the following 
+				- Connectivity 
+				- NvlBwStress 
+				- CpuGpuSyncPulsePower 
+				- ThermalSteadyState 
+	**Note - this occurs only if a real failure occurs during the run and will not impact passing runs 
+* Increased test time for SysGUID workaround and VF curve generation issue.
+--------------------------------------------------------------------------------
+Diag Version: 629-24972-XXXX-FLD-42178
+Date 2/6/2025
+
+* Compatible with 0.8.00 firmware package. 
+* Fixed NVRM Generic Falcon Error
+* Fixed diagnostics exit failure when encountering unexpected device interrupts on NVLink
+* Improved diagnostics resiliency when the secondary node log retrieval is taking longer than expected or secondary nodes finish asynchronously.
+* Improved failure attribution. The diagnostics will attempt to report the failing node and/or link instead of waiting for timeout.
+	- NVLink health is validated prior to continuing tests
+* Removed NVLink eye diagram test due to interference with link training. Users should reference the BER and BLER1 for accurate link quality metrics.
+* Updated NVLink BER and BLER1 thresholds based on updated data from NVIDIA validation.
+
+Known Issues: 
+* When running the diagnostics on the switch trays, the node that is running NMX-C must be the first node listed in the spec JSON file.
+* A FECS uCode failure might occur on some nodes. This failure is generally consistent on specific GPUs
+* The diagnostics might fail to specify the failing node in the instance that the diagnostics crash. Users should review the output.log for the corresponding test for failure attribution.
+* The diagnostics require improved failure attribution
+* When running multiple tests in a single diagnostics run, a failure in a test might propagate to the following tests in the run.  
+	Workaround:
+		Run tests individually using “–test=” (ex, “--test=Connectivity”) to see correct results of subsequent tests after a failing test.  
+		Command: 
+			./partnerdiag --mfg --run_spec=spec_gb200_nvl_72_2_4_compute_nodes_partner_mfg.json --primary_diag_ip=<IP> --topology=<Nvlink Topology json> --test=<virtual_id> 
+	
+			Where <virtual_id> is one of the following 
+				- Connectivity 
+				- NvlBwStress 
+				- CpuGpuSyncPulsePower 
+				- ThermalSteadyState 
+	**Note - this occurs only if a real failure occurs during the run and will not impact passing runs 
+* Increased test time for SysGUID workaround and VF curve generation issue.
+--------------------------------------------------------------------------------
+Diag Version: 629-24972-XXXX-FLD-42054
+Date 01/28/2025
+
+* Compatible with 0.8.00 firmware package. 
+* Diagnostics fail earlier when encountering unexpected interrupts
+* Updated Nvlink BER thresholds
+* Fixed high NVLink BER that caused tests to exit early. 
+* Increased minimum runtime for NVLink tests to 10 minutes to check NVLink BER.
+* Fixed querying Slot ID and Tray ID using the BMC, --no_bmc 
+* Fixed --skip_driver_upload 
+
+Known Issues: 
+* When running multiple tests in a single diagnostics run, a failure in a test might propagate to the following tests in the run.  
+	Workaround:
+		Run tests individually using “–test=” (ex, “--test=Connectivity”) to see correct results of subsequent tests after a failing test.  
+		Command: 
+			./partnerdiag --mfg --run_spec=spec_gb200_nvl_72_2_2_compute_nodes_partner_mfg.json --primary_diag_ip=<IP> --topology=<Nvlink Topology json> --test=<virtual_id> 
+	
+			Where <virtual_id> is one of the following 
+				- Connectivity 
+				- NvlBwStress 
+				- CpuGpuSyncPulsePower 
+				- ThermalSteadyState 
+	**Note - this occurs only if a real failure occurs during the run and will not impact passing runs.
+
+* GPU resets might cause OS crash. This will be fixed in a future firmware release. 
+* Increased test time for SysGUID workaround and VF curve generation issue. 
+* Tests might timeout due to automatic MODS retry mechanism when certain errors occur.
+	- The following errors trigger the mods retry mechanism
+		1. *539 - NVRM_FLCN_ERROR
+		2. *540 - NVRM_FATAL_ERROR
+		3. *541 - NVRM_MEMORY_ERROR
+		4. *603 - NVRM_TIMEOUT
+			If NVRM_TIMEOUT occurs, it is recommended to reboot the node and retry the test
+		5. *41  - CANNOT HOOK INTERRUPTS
+* "Unexpected Device Interrupts" error might occur on system with high NVLink BER.
+	 - This will be resolved in a future release.
+* "Could not find specified device" error might occur if any nvlinks are down on a node under test
+	- If any node experiences a link-down event, all nodes will have this error.
+	- It is recommended to run the "Connectivity" test to gather additional information about the error.
+--------------------------------------------------------------------------------
+Diag Version: 629-24972-XXXX-FLD-41963
+Date 1/9/2025
+
+* Updated NVLink BER thresholds for PS hardware
+
+
+
+--------------------------------------------------------------------------------
+Diag Version: 629-24972-XXXX-FLD-41807
+Date 12/23/2024
+
+* Added Nvlink traffic, Power Pulse, and Thermal tests for compute nodes. 
+* Support QS and PS hardware. 
+* Add nvlink physical pin reporting to improve Nvlink failure attribution for 36x1 and 72x1 configs. 
+* Fix issue causing failure to terminate diagnostic when a timeout occurs. 
+* Fix issue causing DRA crash
+* Report Nvlink Bit Error Rates in the _summary.log files. 
+
+Known Issues: 
+* Increased test time for firmware compatability.  
+	- Test time will be reduced in a future diag release.  
+* Nvlink BER thresholds are not finalized. 
+* Intermittent Timeout or NVRM not supported failures due to intermittent sysGUID assignment issues. 
+	- Mitigation: Before running the L11 partnerdiag, ensure that the sysguids for the GPUs on each node are valid. 
+
+Here are the steps to ensure the correctness:  
+1. Login to switch tray that is running SM (usually 1st switch tray) and run "sudo ibnetdiscover | grep devid=0x2900 -A 3 | grep sysimgguid | sort | uniq -c | sort" 
+2. Check the output and ensure you see 9 (for 36x1) or 18 (for 72x1) unique non-zero sysimguids. Each line represents a compute tray. The start of each line represents how many GPUs have a non-zero sysguid, so anything less than 4 is bad. The below sample output fails for not having 9 sysguids and some GPUs on the compute trays do not have a valid sys guid since we don't see 4 at the start of the line. 
+3. If all GPUs/compute trays have valid sysguids, you can proceed with running the diagnostic. Otherwise, power cycle compute nodes from BMC and go back to step 1. It may take a few minutes for the sysguid values to populate. 
+
+Below is an example of a bad set of sysguids: 
+
+    1 sysimgguid=0x756ed57b196f6df4 
+    2 sysimgguid=0x14a9d0f205275932 
+    2 sysimgguid=0x16ceee240bca0e1b 
+    2 sysimgguid=0x4bc59e69f309ea6a 
+    2 sysimgguid=0x5aa5e2c53050fddb 
+    3 sysimgguid=0xd8394467a3379538 
+    4 sysimgguid=0x76b3d9ec5ea1e55c 
+    4 sysimgguid=0xc142ba77c0f5db80 
+
+
+--------------------------------------------------------------------------------
+Diag Version: 629-24972-XXXX-FLD-41547
+Date 11/27/2024
+
+Updates:
+* Add field diagnostics coverage (--field)
+* Fixed DRA reporting issue
+* Add feature to specify DRA port for inter-node communication (--dra_port)
+* Add feature to support inter-node communication using file descriptor
+* Add support for setting enabled nvlinks in the test spec json using "nvlink_mask"
+* Add managed mode support. Support running the diagnostics when the secondary diags have be previously copied to secondary nodes
+* Fix summary.json not getting generated
+* Report switch FNM link failures
+* Update NVLink BER Thresholds
+
+Known Issues:
+* When using managed mode, an intermittent issue occurs where not all secondary nodes report their status to the primary node. This may result in a false pass.
+        * Workaround:
+               - Check the secondary node logs to confirm all nodes passed or
+               or
+	       - Check that the summary table in the primary node reports all expected nodes. (run.log or summary.json)
+* When using managed mode with unix socket file descriptors, the diags running on the secondary nodes might not exit cleanly,
+  resulting in a hang after the printing the status banner.
+	* Workaround:
+ 	       - Kill remaining diagnostics processes. (Processes will contain "onediag" in the name)
+--------------------------------------------------------------------------------
+Diag Version: 629-24972-XXXX-FLD-40926
+Date 9/27/2024
+
+* Add Nvlink connectivity checks on compute and switch nodes
+* Add EOM signal integrity check on compute nodes
+

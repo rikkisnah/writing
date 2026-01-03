@@ -1,0 +1,188 @@
+id: {{workspace_name}}.workflow.docs-genesis
+name: Docs Genesis (Multi-Repo, Approval-First, SOTA)
+version: 1.6.0
+owners: ["{{workspace_name}}"]
+created_date: {{date_utc}}
+updated_date: {{date_utc}}
+tags: [crew, workflow, docs, diataxis, genesis, approval-gated]
+model_compatibility:
+  preferred: [gpt-5+]
+  compatible: [gpt-4o, grok-4]
+
+purpose: >
+  Deep-inspect one or more repositories and, upon approval, scaffold a standardized Diátaxis docs structure
+  using SOTA personas, carrying forward conventions and templates from a designated source repository.
+
+inputs:
+  required:
+    - name: workspace_name
+      description: Namespace/prefix for personas/workflows (e.g., "compute")
+    - name: repos
+      description: Repositories to process (explicit docs_dir per repo)
+      schema:
+        type: array
+        items:
+          type: object
+          required: [repo_root, docs_dir]
+          properties:
+            repo_root: { type: string }
+            docs_dir: { type: string }
+            name: { type: string, nullable: true }
+            default_branch: { type: string, nullable: true }
+            scope: { type: string, nullable: true }
+    - name: conventions_source_root
+      description: Absolute path to the repository providing canonical templates/conventions (must be provided; no default)
+    - name: date_utc
+      description: ISO date for stamping outputs
+  optional:
+    - name: workspace_root
+      description: Absolute path containing all checked-out repos (for cross-repo analysis)
+    - name: output_mode
+      description: skeleton | content | full
+      default: skeleton
+    - name: constraints
+      description: Approval/safety constraints
+      default: { require_approval: true }
+    - name: artifacts_read
+      description: Additional paths to ingest
+      default: []
+    - name: cross_repo_strategy
+      description: propose | host_in_main_repo | separate_docs_repo
+      default: propose
+    - name: templates_profile
+      description: auto | frontend | service | library | data | docs-only
+      default: auto
+
+routing:
+  dispatcher: {{workspace_name}}.workflow.repo-inspection
+  delegates:
+    program: ["{{workspace_name}}.chief-of-staff"]
+    docs: ["{{workspace_name}}.docs-lead", "{{workspace_name}}.link-auditor"]
+    arch: ["{{workspace_name}}.architect", "{{workspace_name}}.explanation-author"]
+    howto: ["{{workspace_name}}.howto-writer"]
+    adr: ["{{workspace_name}}.adr-drafter"]
+    quality: ["{{workspace_name}}.quality-engineer", "{{workspace_name}}.style-accessibility-checker"]
+    policy: ["{{workspace_name}}.repo-steward", "{{workspace_name}}.chief-security-officer", "{{workspace_name}}.responsible-ai-officer"]
+    triage: ["{{workspace_name}}.triager"]
+    dev: ["{{workspace_name}}.developer"]
+    refactor: ["{{workspace_name}}.refactoring-guru"]
+    debug: ["{{workspace_name}}.debugging-guru"]
+
+templates:
+  source:
+    conventions_source_root: "{{conventions_source_root}}"
+    include:
+      - docs/09-ai-agents/templates/docs-kit/**
+      - docs/11-metadata/templates/**
+      - docs/12-conventions/**
+  profile_resolution:
+    auto:
+      - Detect stack(s) from manifests (JS/TS, Python, Java, Go, .NET, Rust, Ruby, PHP) and tools (webpack, storybook, pytest/mvn/gradle, go, cargo, bundler)
+      - Choose the closest templates_profile; list rationale in plan
+    mapping:
+      frontend: [react, vue, angular, webpack, storybook]
+      service: [python, java, go, dotnet, rust, ruby]
+      library: [ts-library, python-lib, go-lib]
+      data: [dbt, airflow, spark, notebooks]
+      docs-only: [none]
+  apply:
+    - from: docs-kit/index.md.tpl
+      to: index.md
+    - from: docs-kit/01-getting-started/README.md.tpl
+      to: 01-getting-started/README.md
+    - from: docs-kit/03-how-to/howto-template.md
+      to: 03-how-to/howto-template.md
+    - from: docs-kit/04-architecture/arch-c1-context.md
+      to: 04-architecture/arch-c1-context.md
+    - from: docs-kit/04-architecture/arch-c2-containers.md
+      to: 04-architecture/arch-c2-containers.md
+    - from: docs-kit/04-architecture/arch-c3-components.md
+      to: 04-architecture/arch-c3-components.md
+    - from: docs-kit/05-reference/ref-environment-variables.md
+      to: 05-reference/ref-environment-variables.md
+    - from: docs-kit/06-decisions/0001-adopt-diataxis.md
+      to: 06-decisions/0001-adopt-diataxis.md
+    - from: docs-kit/06-decisions/0002-adopt-madr-template.md
+      to: 06-decisions/0002-adopt-madr-template.md
+    - from: conventions/status.md
+      to: 12-conventions/status.md
+    - from: conventions/diagram-style.md
+      to: 12-conventions/diagram-style.md
+    - from: metadata/metadata-schema.md
+      to: 11-metadata/metadata-schema.md
+
+orchestration:
+  prepare:
+    - For each repo:
+      - Collect repo facts; detect stacks/tools
+      - Resolve templates_profile (default: auto); draft choice + rationale
+      - Draft per-repo docs-genesis-plan.md:
+        - Intended writes under docs_dir (no other paths)
+        - Delegation plan by role with acceptance criteria
+        - Validations to run post-write
+    - Cross-repo analysis (if workspace_root or repos.length > 1):
+      - Draft cross-repo-hosting-options.md (main vs separate docs repo vs hybrid) with pros/cons/TCO/risk
+    - Always stop for approval:
+      - Emit plan(s) in docs_dir/ai-agent/plans/
+      - Include templates_profile selection and full template mapping for review
+  delegate:
+    - Upon approval, SOTA personas execute as defined (docs-lead, architect, howto-writer, adr-drafter, link-auditor, quality-engineer, style-accessibility-checker, triager, developer, refactoring-guru, debugging-guru, repo-steward, security/RAI, chief-of-staff).
+  integrate:
+    - Validate: Diátaxis structure, kebab-case, mermaid, metadata schema, link integrity,
+      badges per docs/12-conventions/status.md, and template application correctness.
+    - Retry bounded; escalate to "{{workspace_name}}.chief-of-staff" then "{{workspace_name}}.repo-steward".
+  finalize:
+    - Emit changelog; stakeholder-updates.md; docs-genesis-exec-summary.md (KPIs: IA coverage, validation pass rate, link health, risks, milestones).
+
+guardrails:
+  must:
+    - SOTA quality bar enforced by quality-engineer gate; acceptance tests embedded where applicable
+    - Follow Diátaxis IA and naming from templates; carry forward conventions from conventions_source_root
+    - Require approval of templates_profile and plan before any writes
+  must_not:
+    - Modify outside docs_dir; exfiltrate secrets; hardcode developer-specific paths
+
+success_criteria:
+  - Standardized skeleton seeded per repo with templates_profile alignment
+  - Exec-level reports green or risk-flagged with owners/ETAs
+  - Validations pass; cross-repo decision recorded (if applicable)
+
+observability:
+  trace_fields: [workflow_id, version, workspace_name, conventions_source_root, templates_profile, repos, model, latency_ms]
+  pii_redaction: enabled
+
+artifacts:
+  writes:
+    - path: docs_dir (per repo)
+      description: Diátaxis docs, plans, and exec reports
+  reads:
+    - path: docs
+    - path: apis
+    - path: config
+    - path: src
+    - path: scripts
+    - path: .github
+    - path: .gitlab
+    - path: build
+    - path: bldenv
+
+example_runs:
+  single_repo_minimal:
+    inputs:
+      workspace_name: compute
+      repos:
+        - { repo_root: {{repo_root}}, docs_dir: {{repo_root}}/docs, name: compute-admin-ui }
+      conventions_source_root: {{repo_root}}
+      date_utc: 2025-11-18
+      output_mode: skeleton
+  multi_repo_with_proposal:
+    inputs:
+      workspace_name: compute
+      workspace_root: {{workspace_root}}   # e.g., /ws
+      repos:
+        - { repo_root: {{workspace_root}}/CCCP, docs_dir: {{workspace_root}}/CCCP/compute-control/docs, name: "Compute CP" }
+        - { repo_root: {{workspace_root}}/repair, docs_dir: {{workspace_root}}/repair/triage-and-repair-service/docs, name: "Repair" }
+      conventions_source_root: {{workspace_root}}/compute-admin-ui
+      date_utc: 2025-11-18
+      output_mode: skeleton
+      cross_repo_strategy: propose

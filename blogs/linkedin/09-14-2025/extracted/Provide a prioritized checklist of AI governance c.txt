@@ -1,0 +1,73 @@
+Provide a prioritized checklist of AI governance
+controls for ministries
+Below is a prioritized checklist of AI governance controls tailored for Mauritius government
+ministries, fully aligned with national law, SADC and AU regional standards, and current best
+practices. [1] [2] [3] [4]
+
+AI Governance Controls Checklist for Ministries
+
+1. Legal and Ethical Foundations
+    Ensure all AI activities comply with the Data Protection Act 2017 and SADC Model Law
+    principles (lawfulness, fairness, transparency, purpose limitation). [2] [3]
+    Integrate sectoral guidelines from the Financial Services Commission and Higher Education
+    Commission, including rules for AI-enabled decision-making and education. [1]
+
+2. Oversight and Structural Controls
+    Establish an AI Ethics and Compliance Committee within each ministry responsible for AI risk
+    oversight, policy development, and compliance auditing. [1]
+    Appoint an AI and Data Protection Officer (DPO) to oversee privacy, data protection, and
+    incident response.
+
+3. Governance and Accountability
+    Maintain a comprehensive AI systems inventory (description, use cases, risk ratings, and
+    owners).
+    Document data sources, model development processes, and decision logic for all AI
+    systems.
+    Assign clear lines of responsibility and escalation for AI failures or ethical breaches.
+
+4. Risk Assessment and Impact Analysis
+    Conduct Data Protection Impact Assessments (DPIAs) before deployment or significant
+    updates of AI systems.
+    Assess algorithmic risks, including bias, transparency, explainability, and systemic impact.
+    Establish review checkpoints for high-risk applications (e.g., social services, public safety,
+    financial aid).
+5. Transparency and Human Oversight
+      Ensure all automated decisions impacting individuals are explainable on demand.
+      Maintain human-in-the-loop processes for all high-impact or rights-affecting decisions. [3] [4]
+      Communicate AI usage practices and rights (opt-out, review) to citizens transparently.
+
+6. Security and Data Protection
+      Adopt strong access controls, audit trails, and security monitoring for data and models.
+      Apply data minimization, anonymization, and retention rules from the DPA and SADC Model
+      Law. [2] [3]
+      Monitor compliance with cross-border transfer rules for any international data exchange.
+
+7. Bias Mitigation and Continuous Improvement
+      Monitor and report on fairness, bias, and disparate impact in AI outcomes—especially for
+      protected groups.
+      Implement continuous model validation and regular independent audits of system
+      performance and ethical risks.
+
+8. Training and Capacity Building
+      Provide periodic training for ministry staff on AI, ethics, compliance, and data protection
+      responsibilities.
+      Review and update governance practices in light of new legal, technical, or sectoral
+      developments.
+
+9. Stakeholder Engagement and Reporting
+      Conduct stakeholder consultations for new high-impact AI initiatives and publicize major use
+      cases.
+      Issue annual accountability and transparency reports on ministry AI use and governance
+      controls.
+These prioritized controls provide a practical, compliant, and ethical blueprint for AI governance
+within Mauritius ministries, ensuring alignment with both national and regional standards. [4] [3] [2]
+[1]
+
+                                                   ⁂
+
+  1. The-Race-for-AI-Leadership_MF_Article.pdf
+  2. https://www.dlapiperdataprotection.com/?t=law&c=MU
+  3. https://www.mediadefence.org/ereader/publications/introductory-modules-on-digital-rights-and-freed
+     om-of-expression-online/module-4-data-privacy-and-data-protection/data-protection/
+  4. https://www.trust.org/toolkit/part-2-emerging-ai-governance-in-africa/governance-in-southern-africa/
+

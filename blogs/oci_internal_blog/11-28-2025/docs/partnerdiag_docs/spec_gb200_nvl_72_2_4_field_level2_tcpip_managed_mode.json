@@ -1,0 +1,274 @@
+{
+    "global_args": {
+        "DiagType": "field",
+        "DiagInfo": {
+            "DiagName": "GB200-NVL L11 Field Diag",
+            "RunLevel": "Level 2"
+        },
+        "cluster_cfg": {
+            "cluster_type": "GB200_NVL_2_4_72x1",
+            "gdm_port": 8765,
+            "imex_port_num": 5080,
+            "imex_ctrl_srv_port_num": 1020,
+            "enable_imex_message_forwarder": true,
+            "imex_message_forwarder_port": 0,
+            "l1_domain_id": 8193,
+            "l2_domain_id": 16384,
+            "node_address_config": "MNNVL_NODE_ADDRESS_CONFIG",
+            "hosts": {
+                "10.114.248.6": {
+                    "node_type": "compute_node",
+                    "host_id": "COMPUTE_NODE_0",
+                    "rack_slot": 1
+                },
+                "10.114.248.7": {
+                    "node_type": "compute_node",
+                    "host_id": "COMPUTE_NODE_1",
+                    "rack_slot": 2
+                },
+                "10.114.248.8": {
+                    "node_type": "compute_node",
+                    "host_id": "COMPUTE_NODE_2",
+                    "rack_slot": 3
+                },
+                "10.114.248.9": {
+                    "node_type": "compute_node",
+                    "host_id": "COMPUTE_NODE_3",
+                    "rack_slot": 4
+                },
+                "10.114.248.10": {
+                    "node_type": "compute_node",
+                    "host_id": "COMPUTE_NODE_4",
+                    "rack_slot": 14
+                },
+                "10.114.248.11": {
+                    "node_type": "compute_node",
+                    "host_id": "COMPUTE_NODE_5",
+                    "rack_slot": 15
+                },
+                "10.114.248.12": {
+                    "node_type": "compute_node",
+                    "host_id": "COMPUTE_NODE_6",
+                    "rack_slot": 16
+                },
+                "10.114.248.13": {
+                    "node_type": "compute_node",
+                    "host_id": "COMPUTE_NODE_7",
+                    "rack_slot": 17
+                },
+                "10.114.248.14": {
+                    "node_type": "compute_node",
+                    "host_id": "COMPUTE_NODE_8",
+                    "rack_slot": 18
+                }
+            }
+        },
+        "EnableDeviceVerify": false,
+        "loopback_ip": "",
+        "enable_mods_gdm": true,
+        "enable_mods_fm": true,
+        "enable_gfm_in_gdm": false,
+        "EnableMultinodeNvlinkTraffic": false,
+        "prometheus_url": "http://10.115.17.102:9352/csv/metrics",
+        "prometheus_thresholds": {
+            "FecEffectiveBer Bit Error Rate" : 1e-9,
+            "PhySymbBer Bit Error Rate" : 1e-25
+        },
+        "mods_execution_retry_count" : 5,
+        "use_python_requests_for_redfish": true,
+        "redfish_curl_connect_timeout": 5,
+        "bmc_redfish_credentials": {
+            "username": "root",
+            "password": "0penBmc"
+        },
+        "bmc_ssh_credentials": {
+            "username": "root",
+            "password": "0penBmc"
+        },
+        "mods_multiinstance_inter_launch_delay_sec": 2,
+        "product_config" : {
+            "C2CLinkMask" : "gb_c1_g2"
+        },
+        "global_args": [
+            "nvlink_mask=0x3FFFF",
+            "timeout_ms=30000"
+        ]
+    },
+    "actions": [
+        {
+            "args": {
+                "timeout_sec": 120
+            },
+            "virtual_id": "inforom",
+            "action": "inforom"
+        },
+        {
+            "virtual_id": "CollectInventory",
+            "args": {
+                "timeout_sec": 600,
+                "skip_data_validation": true
+            },
+            "pass_on_fail": true,
+            "action": "inventory"
+        },
+        {
+            "virtual_id": "Connectivity",
+            "args": {
+                "timeout_sec": 900,
+                "enable_prometheus": false,
+                "nvlink": {
+                    "args": [
+                    ],
+                    "compute_node": {
+                        "args": [
+                        ],
+                        "run_mods_type": "multiinstance"
+                    },
+                    "switch_node": {
+                        "args": [
+                            "nvlink_mask=0xFFFFFFFFFFFFFFFFFF"
+                        ]
+                    }
+                },
+                "powercable": {
+                    "skip_test": true
+                },
+                "pex": {
+                    "skip_test": true
+                },
+                "i2c": {
+                    "skip_test": true
+                },
+                "ssd": false,
+                "infiniband": false,
+                "fnm_links": true
+            },
+            "action": "connectivity"
+        },
+        {
+            "virtual_id": "NvlBwStressBg610Pulsy",
+            "args": {
+                "isPulsy": true,
+                "concurrent": {
+                    "args": []
+                },
+                "concurrent_uva": {
+                    "skip_test": true,
+                    "args": []
+                },
+                "singleinstance": {
+                    "skip_test": true,
+                    "args": []
+                },
+                "timeout_sec": 2100,
+                "enable_prometheus": false
+            },
+            "action": "nvlink"
+        },
+        {
+            "virtual_id": "NvlBwStressBg610Loop1",
+            "args": {
+                "concurrent": {
+                    "args": []
+                },
+                "concurrent_uva": {
+                    "skip_test": true,
+                    "args": []
+                },
+                "singleinstance": {
+                    "skip_test": true,
+                    "args": []
+                },
+                "timeout_sec": 2100,
+                "enable_prometheus": false
+            },
+            "action": "nvlink"
+        },
+        {
+            "virtual_id": "ThermalSteadyStateLoop1",
+            "args": {
+                "duration_sec": 900,
+                "args":[
+                    "spec=thermalTestSpec_steadystate"
+                ],
+                "timeout_sec": 1380,
+                "tegra_telemetry": true,
+                "tegra_telemetry_time_ms": 300,
+                "enable_prometheus": false
+            },
+            "action": "powersync",
+            "retest": true
+        },
+        {
+            "virtual_id": "NvlBwStressBg610Loop2",
+            "args": {
+                "concurrent": {
+                    "args": []
+                },
+                "concurrent_uva": {
+                    "skip_test": true,
+                    "args": []
+                },
+                "singleinstance": {
+                    "skip_test": true,
+                    "args": []
+                },
+                "timeout_sec": 2100,
+                "enable_prometheus": false
+            },
+            "action": "nvlink"
+        },
+        {
+            "virtual_id": "ThermalSteadyStateLoop2",
+            "args": {
+                "duration_sec": 900,
+                "args":[
+                    "spec=thermalTestSpec_steadystate"
+                ],
+                "timeout_sec": 1380,
+                "tegra_telemetry": true,
+                "tegra_telemetry_time_ms": 300,
+                "enable_prometheus": false
+            },
+            "action": "powersync",
+            "retest": true
+        },
+        {
+            "virtual_id": "CpuGpuSyncPulsePower",
+            "args": {
+                "duration_sec": 900,
+                "args": [
+                    "spec=thermalTestSpec_cpugpupowerpulse",
+                    "cpu_gpu_sync_pulse_power_freqs=6",
+                    "cpu_gpu_sync_pulse_power_duty_pcts=50",
+                    "cpu_gpu_sync_pulse_power_runtimes_ms=900000"
+                ],
+                "timeout_sec": 1380,
+                "tegra_telemetry": true,
+                "tegra_telemetry_time_ms": 300,
+                "enable_prometheus": false
+            },
+            "action": "powersync"
+        },
+        {
+            "virtual_id": "NvlBwStress",
+            "args": {
+                "concurrent": {
+                    "skip_test": true,
+                    "args": []
+                },
+                "concurrent_uva": {
+                    "skip_test": true,
+                    "args": []
+                },
+                "singleinstance": {
+                    "args": []
+                },
+                "timeout_sec": 2100,
+                "enable_prometheus": false
+            },
+            "action": "nvlink"
+        }
+    ],
+    "version": "1"
+}

@@ -1,0 +1,256 @@
+{
+    "nodes": [
+        {
+            "chassis_id": 0,
+            "node_id": 0,
+            "tray_id": 0,
+            "node_type": "compute",
+            "devices": [
+                {
+                    "topology_id": 0,
+                    "physical_id": 0,
+                    "device_type": "gpu"
+                },
+                {
+                    "topology_id": 1,
+                    "physical_id": 1,
+                    "device_type": "gpu"
+                },
+                {
+                    "topology_id": 2,
+                    "physical_id": 2,
+                    "device_type": "gpu"
+                },
+                {
+                    "topology_id": 3,
+                    "physical_id": 3,
+                    "device_type": "gpu"
+                }
+            ]
+        },
+        {
+            "chassis_id": 0,
+            "node_id": 1,
+            "tray_id": 1,
+            "node_type": "compute",
+            "devices": [
+                {
+                    "topology_id": 4,
+                    "physical_id": 4,
+                    "device_type": "gpu"
+                },
+                {
+                    "topology_id": 5,
+                    "physical_id": 5,
+                    "device_type": "gpu"
+                },
+                {
+                    "topology_id": 6,
+                    "physical_id": 6,
+                    "device_type": "gpu"
+                },
+                {
+                    "topology_id": 7,
+                    "physical_id": 7,
+                    "device_type": "gpu"
+                }
+            ]
+        },
+        {
+            "chassis_id": 0,
+            "node_id": 2,
+            "tray_id": 2,
+            "node_type": "compute",
+            "devices": [
+                {
+                    "topology_id": 8,
+                    "physical_id": 8,
+                    "device_type": "gpu"
+                },
+                {
+                    "topology_id": 9,
+                    "physical_id": 9,
+                    "device_type": "gpu"
+                },
+                {
+                    "topology_id": 10,
+                    "physical_id": 10,
+                    "device_type": "gpu"
+                },
+                {
+                    "topology_id": 11,
+                    "physical_id": 11,
+                    "device_type": "gpu"
+                }
+            ]
+        },
+        {
+            "chassis_id": 0,
+            "node_id": 3,
+            "tray_id": 3,
+            "node_type": "compute",
+            "devices": [
+                {
+                    "topology_id": 12,
+                    "physical_id": 12,
+                    "device_type": "gpu"
+                },
+                {
+                    "topology_id": 13,
+                    "physical_id": 13,
+                    "device_type": "gpu"
+                },
+                {
+                    "topology_id": 14,
+                    "physical_id": 14,
+                    "device_type": "gpu"
+                },
+                {
+                    "topology_id": 15,
+                    "physical_id": 15,
+                    "device_type": "gpu"
+                }
+            ]
+        },
+        {
+            "chassis_id": 0,
+            "node_id": 4,
+            "tray_id": 4,
+            "node_type": "compute",
+            "devices": [
+                {
+                    "topology_id": 16,
+                    "physical_id": 16,
+                    "device_type": "gpu"
+                },
+                {
+                    "topology_id": 17,
+                    "physical_id": 17,
+                    "device_type": "gpu"
+                },
+                {
+                    "topology_id": 18,
+                    "physical_id": 18,
+                    "device_type": "gpu"
+                },
+                {
+                    "topology_id": 19,
+                    "physical_id": 19,
+                    "device_type": "gpu"
+                }
+            ]
+        },
+        {
+            "chassis_id": 0,
+            "node_id": 5,
+            "tray_id": 5,
+            "node_type": "compute",
+            "devices": [
+                {
+                    "topology_id": 20,
+                    "physical_id": 20,
+                    "device_type": "gpu"
+                },
+                {
+                    "topology_id": 21,
+                    "physical_id": 21,
+                    "device_type": "gpu"
+                },
+                {
+                    "topology_id": 22,
+                    "physical_id": 22,
+                    "device_type": "gpu"
+                },
+                {
+                    "topology_id": 23,
+                    "physical_id": 23,
+                    "device_type": "gpu"
+                }
+            ]
+        },
+        {
+            "chassis_id": 0,
+            "node_id": 6,
+            "tray_id": 6,
+            "node_type": "compute",
+            "devices": [
+                {
+                    "topology_id": 24,
+                    "physical_id": 24,
+                    "device_type": "gpu"
+                },
+                {
+                    "topology_id": 25,
+                    "physical_id": 25,
+                    "device_type": "gpu"
+                },
+                {
+                    "topology_id": 26,
+                    "physical_id": 26,
+                    "device_type": "gpu"
+                },
+                {
+                    "topology_id": 27,
+                    "physical_id": 27,
+                    "device_type": "gpu"
+                }
+            ]
+        },
+        {
+            "chassis_id": 0,
+            "node_id": 7,
+            "tray_id": 7,
+            "node_type": "compute",
+            "devices": [
+                {
+                    "topology_id": 28,
+                    "physical_id": 28,
+                    "device_type": "gpu"
+                },
+                {
+                    "topology_id": 29,
+                    "physical_id": 29,
+                    "device_type": "gpu"
+                },
+                {
+                    "topology_id": 30,
+                    "physical_id": 30,
+                    "device_type": "gpu"
+                },
+                {
+                    "topology_id": 31,
+                    "physical_id": 31,
+                    "device_type": "gpu"
+                }
+            ]
+        },
+        {
+            "chassis_id": 0,
+            "node_id": 8,
+            "tray_id": 8,
+            "node_type": "compute",
+            "devices": [
+                {
+                    "topology_id": 32,
+                    "physical_id": 32,
+                    "device_type": "gpu"
+                },
+                {
+                    "topology_id": 33,
+                    "physical_id": 33,
+                    "device_type": "gpu"
+                },
+                {
+                    "topology_id": 34,
+                    "physical_id": 34,
+                    "device_type": "gpu"
+                },
+                {
+                    "topology_id": 35,
+                    "physical_id": 35,
+                    "device_type": "gpu"
+                }
+            ]
+        }        
+    ]
+}

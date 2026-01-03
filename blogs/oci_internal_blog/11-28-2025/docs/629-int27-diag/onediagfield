@@ -1,0 +1,1072 @@
+#!/bin/bash
+
+# NVIDIA_COPYRIGHT_BEGIN
+#
+# Copyright 2017-2025 by NVIDIA Corporation.  All rights reserved.  All
+# information contained herein is proprietary and confidential to NVIDIA
+# Corporation.  Any use, reproduction, or disclosure without the written
+# permission of NVIDIA Corporation is prohibited.
+#
+# NVIDIA_COPYRIGHT_END
+
+set -eEuo pipefail
+
+# nvpex2 needs this setting
+export LC_ALL=C
+IS_HELP_COMMAND_REQUESTED=false
+SETUP_ENV_ONLY=false
+IS_SYS_PYTHON3_FORCED=false
+IS_PRIMARY=false
+IS_EUD=false
+IS_SYS_DRIVER_FORCED=false
+CUSTOM_FFA_PATH=false
+LOGSDIR=""
+OVERWRITE_TOOL_CONFIG=""
+INSTALL_DIR=""
+CMDLOG="$(pwd)/cmd.log"
+MODS_BLACKLIST_FILE="/etc/modprobe.d/modsblacklist.conf"
+PACKAGED_PYTHON_REGEX="python-3.*"
+TESTDIR=""
+EXTRA_PYTHON_ARGS=()
+OVERWRITE_LOG_DIR=false
+IS_EUD=false
+SKIP_CHECKSUM=false
+SKIP_FFA_VERIFY=false
+SKIP_CLINK_MODULE_INSTALL=false
+ENABLE_CORE_DUMP=false
+OLD_HARD_LIMIT=""
+OLD_SOFT_LIMIT=""
+OLD_PATTERN=""
+DMESG_OFFSET=""
+LOG_DMESG=""
+
+DRIVERS_TO_REMOVE=(
+    "nouveau"
+    "nv_peer_mem"
+    "nv_peermem"
+    "nvidia_peermem"
+    "gdrdrv"
+    "nvidia_uvm"
+    "nvidia_drm"
+    "nvidia_modeset"
+    "nvidia_vgpu_vfio"
+    "nvidia_fs"
+    "nvidia_cspmu"
+    "nvidiafb"
+    "nvidia"
+    "nvtool"
+)
+
+SERVICES_TO_UNLOAD=(
+    "nvidia-docker"
+    "docker"
+    "nvidia-*"
+    "nvidia-persistenced"
+    "fabricmanager"
+    "nvidia-fabricmanager"
+    "dcgm"
+    "dcgm-exporter"
+    "dcgm-exporter.service"
+    "nvidia-dcgm"
+    "gdrdrv"
+    "nv_peer_mem"
+    "nvsm*"
+    "systemd-udevd"
+    "systemd-udevd-kernel.socket"
+    "systemd-udevd-control.socket"
+    "nvidia-imex"
+    "slurmd"
+)
+
+die()
+{
+    echo "Error: $@" | tee -a "$CMDLOG" >&2
+    exit 1
+}
+
+main()
+{
+    # Create /var/lock/ directory if it does not exist
+    if [[ ! -d /var/lock ]]; then
+        mkdir -p /var/lock
+        chmod 1777 /var/lock
+    fi
+
+    parse_cmdline "$@"
+
+    extract_arch_package
+    set_install_dir
+    create_logdir "$@"
+    log_cmdline "$@"
+
+    overwrite_tool_config
+
+    if [[ $SKIP_CHECKSUM == false ]]; then
+        verify
+    fi
+    if [[ $IS_EUD != true ]] && [[ $IS_PRIMARY != true ]] && [[ $IS_HELP_COMMAND_REQUESTED != true ]]; then
+        udevfix_WAR
+        # Ignore disabling services in selftest
+        [[ ${DGXMAKE_SELF_TEST:-} == "testing_dgxmake_in_the_best_way_we_can" ]] || disable_services
+        # Mods module is not needed in help command and in selftest.
+        [[ ${DGXMAKE_SELF_TEST:-} == "testing_dgxmake_in_the_best_way_we_can" ]] || (setup_module_compile && install_mods_module && install_clink_module)
+    fi
+    [[ $SETUP_ENV_ONLY != true ]] || exit 0
+
+    run_tests "$0" "$@"
+}
+
+extract_arch_package()
+{
+    local SRCDIR=$(find_src_dir)
+    if [[ -d "$SRCDIR/dgx" ]]; then
+        return
+    fi
+    local ARCH=$(uname -m)
+    local ARCH_PACKAGE=""
+    if [[ $ARCH == "x86_64" ]]; then
+        ARCH_PACKAGE="$SRCDIR/dgx_amd64.tgz"
+    elif [[ $ARCH == "aarch64" ]]; then
+        ARCH_PACKAGE="$SRCDIR/dgx_aarch64.tgz"
+    else
+        die "Arch $ARCH is not supported."
+    fi
+    if [[ ! -f "$ARCH_PACKAGE" ]]; then
+        die "Arch package $$ARCH_PACKAGE does not exist."
+    fi
+
+    echo "Extracting arch package..."
+    tar zxf "$ARCH_PACKAGE" -C "$SRCDIR" dgx
+}
+
+set_install_dir()
+{
+    local SRCDIR=$(find_src_dir)
+    EXTRA_PYTHON_ARGS+=("--diagsrcdir=$SRCDIR")
+
+    if [[ -z $INSTALL_DIR ]]; then
+
+        local ARCH=$(uname -m)
+        local ARCH_FOLDER=""
+        if [[ $ARCH == "x86_64" ]]; then
+            ARCH_FOLDER="dgx_amd64"
+        elif [[ $ARCH == "aarch64" ]]; then
+            ARCH_FOLDER="dgx_aarch64"
+        fi
+
+        local FOLDERS_IN_ORDER_OF_PRIORITY=(
+            # If the PWD and the folder where the "script and the dgx folder" exists are different,
+            # (can happen when we execute using absolute path from a different dir),
+            # set the INSTALL_DIR to the script folder.
+            "$SRCDIR"
+            "$(pwd)"
+            "$SRCDIR/$ARCH_FOLDER"
+            "$(pwd)/$ARCH_FOLDER"
+        )
+
+        local FOLDER_TO_TEST
+        for FOLDER_TO_TEST in ${FOLDERS_IN_ORDER_OF_PRIORITY[@]}; do
+            if [[ -f "$FOLDER_TO_TEST/dgx/hash" ]]; then
+                INSTALL_DIR="$FOLDER_TO_TEST"
+                break
+            fi
+        done
+
+        [[ -z "${OPSDIAG_TESTROOT+x}" ]] || INSTALL_DIR="$OPSDIAG_TESTROOT"
+    fi
+
+    if [[ -z $INSTALL_DIR ]]; then
+        die "Couldn't determine the install dir"
+    fi
+
+    EXTRA_PYTHON_ARGS+=("--installdir=$INSTALL_DIR")
+
+    TESTDIR="$INSTALL_DIR/dgx/tests"
+}
+
+create_logdir()
+{
+    local LOCKFILE="$INSTALL_DIR/dgx_log_creation_lock"
+    local LOCK_FD=201
+    local SECS
+
+    if [[ -z $LOGSDIR ]]; then
+        SECS=$(date +%s)
+
+        # Get exclusive lock
+        # Lock is to guarantee that different log folder is created for different execution
+        eval exec "${LOCK_FD}"'>"$LOCKFILE"'
+        flock $LOCK_FD
+        local LOG_DIR_BASE="$INSTALL_DIR/dgx/logs"
+        local LOG_DIR_PREFIX="logs"
+        [[ -z "${OPSDIAG_NAMETAG+x}" ]] || LOG_DIR_PREFIX="logs-$OPSDIAG_NAMETAG"
+        [[ -z "${OPSDIAG_LOGDIR+x}" ]] || LOG_DIR_BASE="$OPSDIAG_LOGDIR/dcdiag/$LOG_DIR_PREFIX-gid$OPSDIAG_GROUPID-testnum$OPSDIAG_TESTNUM"
+
+        LOGSDIR="$LOG_DIR_BASE-$(date '+%Y%m%d-%H%M%S' --date="@$SECS")"
+        # Make sure each process has different log directory
+        while [[ -d $LOGSDIR ]]; do
+            SECS=$(( SECS + 1 ))
+            LOGSDIR="$LOG_DIR_BASE-$(date '+%Y%m%d-%H%M%S' --date="@$SECS")"
+        done
+        # Pass --log in all case, because even --help executes some commands which will go
+        # to output.log and output.log needs to be in log specific folder
+        EXTRA_PYTHON_ARGS+=("--log=$LOGSDIR")
+        mkdir -p $LOGSDIR
+        # Release lock
+        flock -u $LOCK_FD
+    fi
+
+    mkdir -p $LOGSDIR
+    # Add a symlink to the latest log folder to make it easier to see the latest log
+    ln -sfn $LOGSDIR "$INSTALL_DIR/dgx/latest_log" || true
+}
+
+log_cmdline()
+{
+    CMDLOG="$LOGSDIR/cmd.log"
+    rm -f "$CMDLOG"
+    echo "Command Line: `basename $0` $@" > "$CMDLOG"
+}
+
+parse_cmdline()
+{
+    while [[ $# -gt 0 ]]; do
+        arg="$1"
+        case $arg in
+            help|-h|--help)
+                IS_HELP_COMMAND_REQUESTED=true
+            ;;
+            --setup_env_only)
+                SETUP_ENV_ONLY=true
+            ;;
+            --use_eud)
+                IS_EUD=true
+            ;;
+            --use_system_python3)
+                IS_SYS_PYTHON3_FORCED=true
+            ;;
+            --log=*)
+                LOGSDIR="${arg#*=}"
+            ;;
+            --log)
+                LOGSDIR="$2"
+                shift
+            ;;
+            --install_dir=*)
+                INSTALL_DIR="${arg#*=}"
+                # Convert to absolute path if relative is provided.
+                # The script expects it to be absolute
+                [[ "$INSTALL_DIR" = /* ]] || INSTALL_DIR="${PWD}/$INSTALL_DIR"
+            ;;
+            -s|--primary)
+                # The primary diag will be launching secondary diag on other nodes
+                # And it should not perform any tests on  its own node
+                IS_PRIMARY=true
+            ;;
+            --use_system_drivers)
+                IS_SYS_DRIVER_FORCED=true
+            ;;
+            --arm_ffa_src=*)
+                CUSTOM_FFA_PATH="${arg#*=}"
+            ;;
+            --overwrite_log_dir)
+                # When provided and if the log dir provided already exists,
+                # the log dir will be deleted and recreated.
+                OVERWRITE_LOG_DIR=true
+            ;;
+            --skip_checksum)
+                SKIP_CHECKSUM=true
+            ;;
+            --skip_ffa_verify)
+                SKIP_FFA_VERIFY=true
+            ;;
+            --skip_clink_module_install)
+                SKIP_CLINK_MODULE_INSTALL=true
+            ;;
+            --enable_core_dump)
+                ENABLE_CORE_DUMP=true
+            ;;
+            --overwrite_tools)
+                SKIP_CHECKSUM=true
+                OVERWRITE_TOOL_CONFIG="$2"
+                shift
+            ;;
+        esac
+        shift
+    done
+
+    if [[ ! -z $LOGSDIR ]]; then
+        # Convert to absolute path if relative is provided.
+        # The script expects it to be absolute
+        [[ "$LOGSDIR" = /* ]] || LOGSDIR="${PWD}/$LOGSDIR"
+        if [[ -d $LOGSDIR && "$(ls -A $LOGSDIR )" ]]; then
+            if [[ $OVERWRITE_LOG_DIR == true ]]; then
+                rm -rf $LOGSDIR
+            else
+                die "$LOGSDIR exists and non empty, Please provide a non existing/empty dir or provide --overwrite_log_dir to delete and recreate it"
+            fi
+        fi
+    fi
+}
+
+if [[ $(id -u) -eq 0 ]]; then
+    sudo()
+    {
+        "$@"
+    }
+fi
+
+have_tool()
+{
+    [[ -n $(which $1 2>/dev/null) ]] || return 1
+}
+
+find_latest_dir_matching_regex()
+{
+    local PATH_TEMP="$1"
+    local FOLDER_REGEX=$2
+    local DIR=""
+    local FOUND_DIR="0"
+
+    [[ -d "$PATH_TEMP" ]] || die "$PATH_TEMP is not a dir"
+
+    # Get latest dir for the given regex
+    for DIR in $(ls -vr1 $PATH_TEMP); do
+        if [[ $DIR =~ $FOLDER_REGEX && -d $PATH_TEMP/$DIR ]] ; then
+            FOUND_DIR="1"
+            break
+        fi
+    done
+
+    [[ -z $DIR || $FOUND_DIR == "0" ]] && die "Cannot find folder in the path $PATH_TEMP with regex $FOLDER_REGEX "
+    echo "$DIR"
+}
+
+find_python()
+{
+    if [[ $IS_SYS_PYTHON3_FORCED == true ]]; then
+        # Python3 avalability is already validated in verify function.
+        echo python3
+    else
+        PACKAGED_PYTHON_DIR=`find_latest_dir_matching_regex "$INSTALL_DIR/dgx/python" "$PACKAGED_PYTHON_REGEX"`
+        echo "$INSTALL_DIR/dgx/python/$PACKAGED_PYTHON_DIR/bin/python3"
+    fi
+}
+
+find_src_dir()
+{
+    local SRCDIR="$(dirname "$0")"
+    if [[ -z $SRCDIR ]]; then
+        SRCDIR="$(basename "$0")"
+        SRCDIR="$(which "$SRCDIR")"
+        SRCDIR="$(dirname "$SRCDIR")"
+    fi
+
+    # get absolute path of SRCDIR
+    echo $(readlink -f "$SRCDIR")
+}
+
+verify()
+{
+    cd "$INSTALL_DIR"/dgx
+    local HASHLOG="$LOGSDIR/filehash.log"
+    rm -f "$HASHLOG"
+
+    if have_tool sha512sum; then
+        sha512sum -c hash > "$HASHLOG"
+    elif have_tool shasum; then
+        shasum -a 512 -b -c hash > "$HASHLOG"
+    else
+        echo "Error: shasum or sha512sum not found!"
+        exit 1
+    fi
+    cd - > /dev/null
+
+    if [[ $IS_SYS_PYTHON3_FORCED == true ]]; then
+        have_tool python3 || die "Error: system python3 forced but not found!"
+    else
+        PACKAGED_PYTHON_DIR=`find_latest_dir_matching_regex "$INSTALL_DIR/dgx/python" "$PACKAGED_PYTHON_REGEX"`
+        if [[ ! -f $INSTALL_DIR/dgx/python/$PACKAGED_PYTHON_DIR/bin/python3 ]]; then
+            die "Error: python3 not packaged with the diag"
+        fi
+    fi
+}
+
+grep_cmd()
+{
+    local PATTERN="$1"
+    shift
+
+    # Write errors to stdout as well as $CMDLOG
+    "$@" 2> >(tee -a "$CMDLOG" >&2) | grep -v grep 2> >(tee -a "$CMDLOG" >&2) | grep "$PATTERN" > /dev/null 2> >(tee -a "$CMDLOG" >&2)
+}
+
+find_process()
+{
+    grep_cmd "$1" ps -ef
+}
+
+find_module()
+{
+    grep_cmd "\<$1\>" lsmod
+}
+
+unload_module_dfs()
+{
+    local NUM_RETRIES=1
+    local MODULE=$1
+    local MAX_RETRIES=5
+
+    # Step-1: Remove holders of this MODULE
+    if [ -d "/sys/module/$MODULE/holders" ]; then
+        for holder in $(ls "/sys/module/$MODULE/holders/" 2>/dev/null); do
+            unload_module_dfs "$holder"
+        done
+    fi
+
+    # Step-2: Remove this MODULE
+    # (Retry to remove this MODULE muliple times)
+    log_unload_nvidia_driver "Checking for module: $MODULE"
+    find_module "$MODULE" || { log_unload_nvidia_driver "Module: $MODULE not loaded"; return 0; }
+
+    while find_module "$MODULE" && [[ $NUM_RETRIES -le $MAX_RETRIES ]]; do
+        log_unload_nvidia_driver "Attempting to remove module: $MODULE Attempt $NUM_RETRIES"
+        sudo rmmod "$MODULE" || true
+        sleep 1
+        NUM_RETRIES=$(($NUM_RETRIES + 1))
+    done
+
+    [[ $NUM_RETRIES -le $MAX_RETRIES ]] || { log_unload_nvidia_driver "Unable to remove module: $MODULE"; return 1; }
+
+    log_unload_nvidia_driver "Removed module: $MODULE successfully"
+    return 0
+}
+
+find_display_manager()
+{
+    local DEFAULT_DISPLAY_MGR="/etc/X11/default-display-manager"
+    [[ ! -f $DEFAULT_DISPLAY_MGR ]] || cat $DEFAULT_DISPLAY_MGR | sed "s/^.*[\/]//"
+}
+
+stop_service()
+{
+    local COUNT=0
+    local CHECK_STATUS
+    local MAX_SERVICE_STOP_RETRIES=10
+    local SERVICE_STOP_COMMAND
+    local SERVICE="$1"
+
+    # Choose the appropriate status and stop command
+    if have_tool systemctl; then
+        CHECK_STATUS="sudo systemctl is-active --quiet $SERVICE"
+        SERVICE_STOP_COMMAND="sudo systemctl stop $SERVICE"
+    elif have_tool lsb_release; then
+        local os_ver_str=`lsb_release -r | sed "s/[^0-9.]//g"`
+        local os_ver=${os_ver_str%.*}
+        if [[ $os_ver -gt 15 ]]; then
+            CHECK_STATUS="sudo service $SERVICE status"
+            SERVICE_STOP_COMMAND="sudo service $SERVICE stop"
+        fi
+    else
+        CHECK_STATUS="find_process $SERVICE"
+        SERVICE_STOP_COMMAND="sudo service $SERVICE stop"
+    fi
+
+    if $CHECK_STATUS > /dev/null 2>&1; then
+        log_unload_nvidia_driver "Service $SERVICE active. unloading"
+
+        if [[ $# -gt 1 ]]; then
+            timeout $2 $SERVICE_STOP_COMMAND || true
+        else
+            $SERVICE_STOP_COMMAND || true
+
+            while $CHECK_STATUS > /dev/null 2>&1; do
+                COUNT=$((COUNT + 1))
+                [[ $COUNT -lt $MAX_SERVICE_STOP_RETRIES ]] || break
+                sleep 1
+            done
+        fi
+
+        ! $CHECK_STATUS > /dev/null 2>&1 || { log_unload_nvidia_driver "Service $SERVICE still active"; return 1; }
+        log_unload_nvidia_driver "Service $SERVICE stopped successfully."
+    elif [[ $SERVICE == "nvidia-imex" ]]; then
+        $SERVICE_STOP_COMMAND > /dev/null 2>&1 || true
+    # We force this service to stop becuase when we call systemctl is-active it reports "activating", which is technically not active
+    # and therefore it doesn't try to stop it. We see that slurmd sets nvidia-persistenced as a dependency so we need to disable it to
+    # prevent it from restarting nvidia-persistenced over and over
+    elif [[ $SERVICE == "slurmd" ]]; then
+        $SERVICE_STOP_COMMAND > /dev/null 2>&1 || true
+    else
+        log_unload_nvidia_driver "Service $SERVICE already inactive/not loaded/not a service"
+    fi
+    return 0
+}
+
+log_unload_nvidia_driver()
+{
+    echo "$@" >> "$LOGSDIR/unloadnvidiamodule.log"
+}
+
+udevfix_WAR()
+{
+    #
+    # WAR for udevfix
+    #
+    local ETC_RULE_PATH="/etc/udev/rules.d"
+    local LIB_RULE_PATH="/lib/udev/rules.d"
+    log_unload_nvidia_driver "Checking if udevfix WAR is needed"
+    local RULES=( $(ls ${ETC_RULE_PATH}/*nvidia.rules 2>/dev/null ) ) || true
+    if [ ${#RULES[@]} -ne 0 ]; then
+        log_unload_nvidia_driver "Found ${#RULES[@]} rules: ${RULES[@]}"
+        local RULE
+        local ORIG_NAME
+        local NEW_NAME
+        for RULE in ${RULES[@]}; do
+            ORIG_NAME=$(basename $RULE)
+            NEW_NAME=${ORIG_NAME%.*}.drules
+            log_unload_nvidia_driver "Starting WAR for $RULE"
+            ln -s /dev/null $RULE && \
+            mv ${LIB_RULE_PATH}/${ORIG_NAME} ${LIB_RULE_PATH}/${NEW_NAME} && \
+            udevadm control -s && \
+            udevadm control -R && \
+            udevadm control -S && \
+            udevadm trigger
+        done
+    else
+        log_unload_nvidia_driver "No need for udevfix WAR"
+    fi
+}
+
+is_any_module_loaded()
+{
+    log_unload_nvidia_driver "Checking if any driver modules are loaded:"
+    local MODULE
+    for MODULE in ${DRIVERS_TO_REMOVE[@]}; do
+        log_unload_nvidia_driver "Checking if $MODULE driver is loaded"
+        ! find_module $MODULE || { log_unload_nvidia_driver "$MODULE loaded"; return 1; }
+        log_unload_nvidia_driver "$MODULE not loaded"
+    done
+    return 0
+}
+
+disable_services()
+{
+    local NUM_RETRIES=0
+    local MAX_RETRIES=10
+
+    echo Removing Nvidia drivers and services...
+
+    # Set persistence mode to 0/disabled using nvidia-smi
+    # Persistnce mode disable is required nvidia module is loaded, and nvidia-smi is available
+    # If we are unable to disable via nvidia-smi, log and ignore in case we are running on an NVSwitch only device
+    log_unload_nvidia_driver "Checking and disabling driver persistence mode"
+    if find_module nvidia && have_tool nvidia-smi; then
+        local RESULT=""
+        local EXIT_CODE=0
+        RESULT=$(nvidia-smi -pm 0 2>&1) || EXIT_CODE=$?
+        log_unload_nvidia_driver "${RESULT}"
+        if [ $EXIT_CODE -ne 0 ]; then
+            log_unload_nvidia_driver "Unable to perform changes to persistence mode, nvidia-smi output: ${RESULT}"
+        else
+            log_unload_nvidia_driver "Driver persistence mode disabled successfully using nvidia-smi"
+        fi
+    else
+        log_unload_nvidia_driver "No need to disable persistence mode using nvidia-smi"
+    fi
+
+    find_process nvidia-cuda-mps-control && echo quit | sudo nvidia-cuda-mps-control
+
+    log_unload_nvidia_driver "Checking if rm_driver_discovery process is running"
+    if find_process rm_driver_discovery > /dev/null 2>&1; then
+        log_unload_nvidia_driver "rm_driver_discovery process is running"
+        if have_tool mst; then
+            if mst stop; then
+                log_unload_nvidia_driver "successfully stopped mst"
+            else
+                log_unload_nvidia_driver "could not stop mst"
+                sudo killall -9 rm_driver_discovery > /dev/null 2>&1 || true
+            fi
+        else
+            log_unload_nvidia_driver "mst tool not found in system"
+            sudo killall -9 rm_driver_discovery > /dev/null 2>&1 || true
+        fi
+    fi
+
+    local DISPLAY_MGR=$(find_display_manager)
+    [[ -n $DISPLAY_MGR ]] && stop_service $DISPLAY_MGR
+
+    local LAST_ERROR_MSG=""
+    while [[ $NUM_RETRIES -le $MAX_RETRIES ]]; do
+        sleep 1
+        log_unload_nvidia_driver "Driver Unload Loop ${NUM_RETRIES}/${MAX_RETRIES}:"
+        NUM_RETRIES=$(($NUM_RETRIES + 1))
+
+        local SERVICE
+        for SERVICE in ${SERVICES_TO_UNLOAD[@]}; do
+            stop_service $SERVICE || { LAST_ERROR_MSG="Failed to stop service $SERVICE"; continue 2; }
+        done
+
+        local MODULE
+        for MODULE in ${DRIVERS_TO_REMOVE[@]}; do
+            unload_module_dfs $MODULE || { LAST_ERROR_MSG="Failed to unload module $MODULE"; continue 2; }
+        done
+
+        log_unload_nvidia_driver "Checking to ensure the unloaded modules are not reloaded by an unknown service"
+        for i in {1..10}; do
+            sleep 0.5
+            log_unload_nvidia_driver "Check ${i}/10:"
+            is_any_module_loaded || { LAST_ERROR_MSG="Unloaded module has been reloaded by an unknown service. Please check logs"; continue 2; }
+        done
+
+        # disable nvidia driver kernel load
+        echo "install nvidia /bin/true" | sudo tee "$MODS_BLACKLIST_FILE" >> /dev/null 2>&1 || log_unload_nvidia_driver "Warning: blacklisting nvidia kernel module $MODS_BLACKLIST_FILE failed with error code $?"
+        sudo depmod || log_unload_nvidia_driver "Warning: depmod returned error code $?"
+
+        break
+    done
+
+    [[ $NUM_RETRIES -le $MAX_RETRIES ]] || { log_unload_nvidia_driver $(sudo lsmod | grep nvidia || true); log_unload_nvidia_driver $(sudo lsof | grep '\/dev\/nvidia' || true); die $LAST_ERROR_MSG; }
+}
+
+setup_module_compile()
+{
+    local LOG="$LOGSDIR/driver.log"
+    if cat /proc/version | grep clang >> "$LOG" 2>&1; then
+        export LLVM=1
+    fi
+}
+
+install_custom_ffa_module()
+{
+    local LOG="$1"
+    local RM_FFA="0"
+    local FFA_USE_BY=""
+    local FFA_MODULE_BUILD_ENV=""
+    local FFA_MODULE_EXTRA_CFLAGS=""
+
+    if lsmod | grep ffa_module >> "$LOG" 2>&1; then
+        RM_FFA="1"
+    fi
+
+    if [[ -e "$CUSTOM_FFA_PATH" ]]; then
+        echo "Building and loading ffa-module from $CUSTOM_FFA_PATH"
+
+        cd "$CUSTOM_FFA_PATH"
+        KERNELDIR="/lib/modules/$(uname -r)/build"
+        MODULEDIR="$CUSTOM_FFA_PATH"
+
+        if [[ -e "$CUSTOM_FFA_PATH/ffa-module.ko" ]]; then
+            make -C "$KERNELDIR" M="$MODULEDIR" clean >> "$LOG" 2>&1
+        fi
+
+        # Force to build arm_ffa module
+        FFA_MODULE_BUILD_ENV+="CONFIG_ARM_FFA_SMCCC=y "
+        FFA_MODULE_BUILD_ENV+="CONFIG_ARM_FFA_TRANSPORT=m "
+        FFA_MODULE_EXTRA_CFLAGS+="-DCONFIG_ARM_FFA_TRANSPORT -DCONFIG_ARM_FFA_SMCCC"
+
+        export $FFA_MODULE_BUILD_ENV
+        make -C "$KERNELDIR" M="$MODULEDIR" modules EXTRA_CFLAGS+="$FFA_MODULE_EXTRA_CFLAGS" >> "$LOG" 2>&1
+
+        if [[ -e "$CUSTOM_FFA_PATH/ffa-module.ko" ]]; then
+            modinfo "$CUSTOM_FFA_PATH/ffa-module.ko" >>"$LOG" 2>&1
+        else
+            die "Failed to build ffa-module from $CUSTOM_FFA_PATH"
+        fi
+
+        if [[ $RM_FFA -eq "1" ]]; then
+            echo "Removing loaded ffa-module before loading new ffa-module from $CUSTOM_FFA_PATH" >> "$LOG" 2>&1
+            sudo killall -9 ffa_module >>"$LOG" 2>&1 || true
+            FFA_USE_BY=$(lsmod | grep -w "ffa_module" | awk '{print $4}')
+            if [[ -n $FFA_USE_BY ]]; then
+                sudo killall -9 $FFA_USE_BY >>"$LOG" 2>&1 || true
+                if ! sudo rmmod $FFA_USE_BY >>"$LOG" 2>&1; then
+                    sleep 5
+                    sudo rmmod $FFA_USE_BY >> "$LOG" 2>&1
+                fi
+            fi
+            if ! sudo rmmod ffa_module >>"$LOG" 2>&1; then
+                sleep 5
+                sudo rmmod ffa_module >> "$LOG" 2>&1
+            fi
+        fi
+
+        sudo insmod "$CUSTOM_FFA_PATH/ffa-module.ko" >>"$LOG" 2>&1
+
+        if lsmod | grep ffa_module >> "$LOG" 2>&1; then
+            echo "ffa-module loaded from $CUSTOM_FFA_PATH" >> "$LOG" 2>&1
+        else
+            die "Failed to load ffa-module from $CUSTOM_FFA_PATH"
+        fi
+    else
+        die "arm_ffa_src path is provided but source files are not found: $CUSTOM_FFA_PATH"
+    fi
+}
+
+install_mods_module()
+{
+    local LOG="$LOGSDIR/driver.log"
+    rm -f "$LOG"
+    touch "$LOG"
+    echo Installing MODS driver...
+
+    {
+        set -x
+        local LOCKFILE="/tmp/mods_driver_lock"
+        local LOCK_FD=200
+        local INSTALLED_DRIVER_VERSION=""
+        local PKG_DRIVER_VERSION=""
+        local RM_MODS="0"
+        local MOD_PROBE="0"
+        local INSTALL_MODS="0"
+        local MODS_DRIVER_BUILD_ARGS=""
+        local MODS_DRIVER_EXTRA_CFLAGS=""
+        local MODS_DRIVER_KBUILD_EXTRA_SYMBOLS=""
+        local FFA_SUPPORT=false
+        DMESG_OFFSET=$(dmesg | wc -l)
+        LOG_DMESG="$LOGSDIR/dmesg_driver.log"
+        trap collect_dmesg RETURN
+
+        if [[ $(uname -m) == "aarch64"  ]]; then
+            if [[ "$SKIP_FFA_VERIFY" == false ]]; then
+                if grep ffa-module /lib/modules/$(uname -r)/modules.builtin >> "$LOG" 2>&1; then
+                    FFA_SUPPORT=true
+                    echo "The ffa_module is built-in" >> "$LOG" 2>&1
+                # Case where ffa_module is already loaded but the ffa_module.ko is not in the standard location /lib/modules
+                # modinfo will look for the module only in the standard location /lib/modules
+                # if ffa_module.ko is loaded from a different location, then the module will be loaded, but it will not show up in the modinfo
+                elif lsmod | grep ffa_module >> "$LOG" 2>&1; then
+                    # ffa_module is built-as-module
+                    FFA_SUPPORT=true
+                    # Required for MODS secure parition
+                    MODS_DRIVER_BUILD_ARGS+="ALLOW_ARM_FFA_TRANSPORT_AS_MODULE=1"
+                elif modinfo ffa_module >> "$LOG" 2>&1; then
+                    # ffa_module is built-as-module
+                    FFA_SUPPORT=true
+                    # Required for MODS secure parition
+                    MODS_DRIVER_BUILD_ARGS+="ALLOW_ARM_FFA_TRANSPORT_AS_MODULE=1"
+                    modprobe ffa_module
+                else
+                    # ffa_module is none on this system
+                    if [[ "$CUSTOM_FFA_PATH" == false ]]; then
+                        die "The system doesn't have ffa_module support. Kindly use option \"--arm_ffa_src=<path>\" to provide ffa_module source file path."
+                    else
+                        FFA_SUPPORT=true
+                        # Required for MODS secure parition
+                        MODS_DRIVER_BUILD_ARGS+="ALLOW_ARM_FFA_TRANSPORT_AS_MODULE=1"
+                        install_custom_ffa_module "$LOG"
+                    fi
+                fi
+            fi
+
+            if modinfo einj >> "$LOG" 2>&1; then
+                modprobe einj > /dev/null 2>&1
+            fi
+        fi
+
+        # Get exclusive lock
+        eval exec "${LOCK_FD}"'>"$LOCKFILE"'
+        flock -x $LOCK_FD
+
+        if lsmod | grep mods >> "$LOG" 2>&1; then
+            if modinfo mods >> "$LOG" 2>&1; then
+                INSTALLED_DRIVER_VERSION=$(modinfo mods | grep -w "version" | awk '{print $2}')
+            else
+                RM_MODS="1"
+            fi
+        # In somecases mods driver would not have been installed
+        # but it will available in /lib/modules or some system wide modules path
+        elif sudo modprobe mods multi_instance=1 >>"$LOG" 2>&1 ; then
+            INSTALLED_DRIVER_VERSION=$(modinfo mods | grep -w "version" | awk '{print $2}')
+        fi
+
+        if [[ $IS_SYS_DRIVER_FORCED == false ]]; then
+            if [[ $FFA_SUPPORT == true ]]; then
+                INSTALL_MODS="1"
+                if [[ ! -z $INSTALLED_DRIVER_VERSION  ]]; then
+                    RM_MODS="1"
+                fi
+            fi
+
+            # We need this because in TinyLinux we don't have make
+            if which make >> /dev/null ; then
+                cd "$INSTALL_DIR"/dgx/tests/driver || exit 1
+
+                if [[ "$CUSTOM_FFA_PATH" != false ]]; then
+                    MODS_DRIVER_BUILD_ARGS+=" CONFIG_ARM_FFA_TRANSPORT=m"
+                    MODS_DRIVER_EXTRA_CFLAGS+="-DCONFIG_ARM_FFA_TRANSPORT"
+                    MODS_DRIVER_KBUILD_EXTRA_SYMBOLS+="$CUSTOM_FFA_PATH/Module.symvers"
+                fi
+
+                if [[ "$MODS_DRIVER_BUILD_ARGS" != "" ]];then
+                    export $MODS_DRIVER_BUILD_ARGS
+                fi
+
+                make clean >>"$LOG" 2>&1
+                make -j 4 EXTRA_CFLAGS+="$MODS_DRIVER_EXTRA_CFLAGS" KBUILD_EXTRA_SYMBOLS+="$MODS_DRIVER_KBUILD_EXTRA_SYMBOLS" >>"$LOG" 2>&1
+                PKG_DRIVER_VERSION=$(modinfo "$INSTALL_DIR"/dgx/tests/driver/mods.ko | grep -w "version" | awk '{print $2}')
+                cd ../../../
+            fi
+            if [[ -z $INSTALLED_DRIVER_VERSION && -z $PKG_DRIVER_VERSION ]]; then
+                die "Either mods module and make not found or some problem in compiling the mods driver code. Check the logs"
+            elif [[ -z $INSTALLED_DRIVER_VERSION  ]]; then
+                INSTALL_MODS="1"
+            elif [[ ! -z $PKG_DRIVER_VERSION && "$PKG_DRIVER_VERSION" != "$INSTALLED_DRIVER_VERSION" ]]; then
+                RM_MODS="1"
+                INSTALL_MODS="1"
+            fi
+        fi
+
+        if [[ $INSTALL_MODS -eq "0" ]]; then
+            if [[ -f /sys/module/mods/parameters/multi_instance ]]; then
+                if [[ $( cat /sys/module/mods/parameters/multi_instance ) -ne "1" ]]; then
+                    RM_MODS="1"
+                    MOD_PROBE="1"
+                fi
+            else
+                RM_MODS="1"
+                MOD_PROBE="1"
+            fi
+        fi
+
+        if [[ $RM_MODS -eq "1" ]]; then
+            sudo killall -9 mods >>"$LOG" 2>&1 || true
+            if ! sudo rmmod mods >>"$LOG" 2>&1; then
+                sleep 5
+                sudo rmmod mods >> "$LOG" 2>&1
+            fi
+        fi
+
+        # Modprobe and insmod are mutually exclusive
+        if [[ $MOD_PROBE -eq "1" ]]; then
+            sudo modprobe mods multi_instance=1 >>"$LOG" 2>&1
+        elif [[ $INSTALL_MODS -eq "1" ]]; then
+            cd "$INSTALL_DIR"/dgx/tests/driver
+            # this is to copy the module to /lib/modules/uname -r
+            sudo bash -c "$MODS_DRIVER_BUILD_ARGS make install >> $LOG 2>&1"
+            sudo depmod -a >> "$LOG" 2>&1
+            sudo insmod mods.ko multi_instance=1 >>"$LOG" 2>&1
+            cd ../../..
+        fi
+        setup_mods_module_permissions "$LOG"
+
+        # Release lock
+        flock -u $LOCK_FD
+        # lock is released when file is closed which automatically happens when script exits
+        # Hence no explicit handling needed for failure conditions
+
+        # Fail fast check
+        if ( lsmod | grep mods >> "$LOG" 2>&1 ) && \
+            ( modinfo mods >> "$LOG" 2>&1 ) && \
+            ( sudo modprobe mods multi_instance=1 >> "$LOG" 2>&1 ); then
+            echo "MODS driver installed successfully." >> "$LOG" 2>&1
+        else
+            die "MODS driver cannot be installed."
+        fi
+
+        set +x
+    } >> "$LOG" 2>&1
+}
+
+check_linux_device_class_header()
+{
+    # This function resolves the issue where some OS, such as RHEL, don't update the kernel version string in `uname -r`.
+    local LOG="$LOGSDIR/clink_driver.log"
+    local CLINK_DRIVER_DIR="$TESTDIR/clink-ioctl-driver"
+    local CLINK_IOCTL_C_FILE="$CLINK_DRIVER_DIR/t241-clink-ioctl.c"
+    local CURRENT_KERNEL_VERSION=$(uname -r)
+    local KERNEL_BUILD_PATH="/lib/modules/$CURRENT_KERNEL_VERSION/build"
+    local HEADER_SRC
+    local CLASS_HEADER_PATH
+
+    if [ ! -e "$KERNEL_BUILD_PATH" ]; then
+        echo "Error: $KERNEL_BUILD_PATH does not exist" >> "$LOG" 2>&1
+        return 1
+    elif [ -L "$KERNEL_BUILD_PATH" ]; then
+        HEADER_SRC=$(readlink -f $KERNEL_BUILD_PATH)
+    elif [ -d "$KERNEL_BUILD_PATH" ]; then
+        HEADER_SRC=$KERNEL_BUILD_PATH
+    else
+        echo "Error: $KERNEL_BUILD_PATH is not a directory or symlink" >> "$LOG" 2>&1
+        return 1
+    fi
+
+    echo "Found kernel ($CURRENT_KERNEL_VERSION) headers at $HEADER_SRC" >> "$LOG" 2>&1
+
+    # Ignore checking this header if it does not exist
+    CLASS_HEADER_PATH="$HEADER_SRC/include/linux/device/class.h"
+    # Check if the class.h declares *owner
+    if grep -q "struct module[[:space:]]*\*owner;" $CLASS_HEADER_PATH >> "$LOG" 2>&1; then
+        echo "Found *owner is declared in $CLASS_HEADER_PATH" >> "$LOG" 2>&1
+        export LINUX_DEVICE_CLASS_HAS_OWNER=1
+        return 0
+    fi
+}
+
+install_clink_module()
+{
+    if [[ $IS_SYS_DRIVER_FORCED == false && $SKIP_CLINK_MODULE_INSTALL == false ]]; then
+        local LOCKFILE="/tmp/clink_ioctl_driver_lock"
+        local INSTALL_CLINK="0"
+        local LOG="$LOGSDIR/clink_driver.log"
+        local LOCK_FD=202
+        local CLINK_DRIVER_DIR="$TESTDIR/clink-ioctl-driver"
+        local TH500_CLINK_INSTALLED="0"
+        local T241_CLINK_INSTALLED="0"
+
+        rm -f "$LOG"
+        touch "$LOG"
+
+        # Get exclusive lock
+        eval exec "${LOCK_FD}"'>"$LOCKFILE"'
+        flock -x $LOCK_FD
+
+        # Check if th500-clink-ioctl installed or available in system modules
+        if lsmod | grep th500_clink_ioctl >> "$LOG" 2>&1; then
+            TH500_CLINK_INSTALLED="1"
+        elif sudo modprobe th500_clink_ioctl >>"$LOG" 2>&1 ; then
+            TH500_CLINK_INSTALLED="1"
+        fi
+
+        # Check if t241-clink-ioctl installed or available in system modules
+        if [[ $TH500_CLINK_INSTALLED -eq "0" ]]; then
+            if lsmod | grep t241_clink_ioctl >> "$LOG" 2>&1; then
+                T241_CLINK_INSTALLED="1"
+            elif sudo modprobe t241_clink_ioctl >>"$LOG" 2>&1 ; then
+                T241_CLINK_INSTALLED="1"
+            fi
+        fi
+
+        if [[ $T241_CLINK_INSTALLED -eq "0" && $TH500_CLINK_INSTALLED -eq "0" ]]; then
+            INSTALL_CLINK="1"
+        fi
+
+        if [[ $INSTALL_CLINK -eq "1" && -d "$CLINK_DRIVER_DIR" ]]; then
+            cd "$CLINK_DRIVER_DIR"
+            check_linux_device_class_header || die "Failed to check linux device class header"
+            sudo make module >> "$LOG" 2>&1
+            sudo insmod t241-clink-ioctl.ko >>"$LOG" 2>&1
+            cd ../../../..
+        fi
+
+        # TODO: Remove this WAR after mods.500 update with clink test patch (Review @33420947)
+        if [[ ! -e /dev/th500-clink && -e /dev/t241-clink ]]; then
+            sudo ln -s /dev/t241-clink /dev/th500-clink >>"$LOG" 2>&1
+            sudo ls -l /dev/th500-clink >>"$LOG" 2>&1
+        fi
+
+        # Release lock
+        flock -u $LOCK_FD
+        # lock is released when file is closed which automatically happens when script exits
+        # Hence no explicit handling needed for failure conditions
+    fi
+}
+
+setup_mods_module_permissions()
+{
+    local LOG="$1"
+    local GROUP="$(id -g)"
+    if [[ -e /dev/mods && $GROUP != 0 ]]; then
+        sudo chgrp "$GROUP" /dev/mods >>"$LOG" 2>&1
+        sudo chmod g+rw /dev/mods >>"$LOG" 2>&1
+    fi
+}
+
+overwrite_tool_config()
+{
+    if [[ ! -z $OVERWRITE_TOOL_CONFIG ]]; then
+        # Convert relative path to absolute path if needed
+        [[ "$OVERWRITE_TOOL_CONFIG" = /* ]] || OVERWRITE_TOOL_CONFIG="${PWD}/$OVERWRITE_TOOL_CONFIG"
+        
+        # Validate that OVERWRITE_TOOL_CONFIG is a valid file path and the file exists
+        if [[ ! -f "$OVERWRITE_TOOL_CONFIG" ]]; then
+            die "$OVERWRITE_TOOL_CONFIG file does not exist"
+        fi
+        
+        # Validate that it's a regular file (not a directory, symlink, etc.)
+        if [[ ! -r "$OVERWRITE_TOOL_CONFIG" ]]; then
+            die "$OVERWRITE_TOOL_CONFIG file is not readable"
+        fi
+
+        cd "$INSTALL_DIR"/dgx
+
+        local PYTHON=$(find_python)
+        
+        (exec "$PYTHON" tests/scripts/dgxmain_utility.py --overwrite_tools_config_json "$OVERWRITE_TOOL_CONFIG" --install-dir "$INSTALL_DIR")    
+    fi
+}
+
+run_tests()
+{
+    echo Starting OneDiag...
+    export DGX_DIAG="$(basename "$1").tgz"
+    export DGX_DIAG_DOCKER_IMAGE=$(ls -1 "$INSTALL_DIR" | grep -E "^onediagcontainer(\.r[0-9]+)?\.[0-9]+\.tgz$" | sort -V | tail -n 1) || true
+
+    shift
+
+    cd "$INSTALL_DIR"/dgx
+
+    local PYTHON=$(find_python)
+    local PDB_ARGS=""
+    [[ ${ENABLE_DGX_DIAG_DEBUG_MODE:-} = true ]] && PDB_ARGS="-m pdb"
+    [[ $IS_EUD == true ]] && EXTRA_ARGS+=" --no_bmc"
+
+    if [[ $ENABLE_CORE_DUMP == true ]]; then
+        enable_coredump
+    fi
+
+    # Remove reporterror trap, as OneDiag will have its own error handling
+    trap - ERR
+    (exec "$PYTHON" $PDB_ARGS tests/scripts/dgx_run.py "${EXTRA_PYTHON_ARGS[@]}" "$@")
+}
+
+reporterror()
+{
+    echo "Error while executing command: \"$BASH_COMMAND\", exit code \"$?\" - Please check $CMDLOG." | tee -a $CMDLOG
+}
+
+unblacklist() {
+    if [[ $IS_PRIMARY == false && $IS_EUD != true ]]; then
+        sudo rm -f "$MODS_BLACKLIST_FILE"
+        sudo depmod || log_unload_nvidia_driver "Warning: depmod returned error code $?"
+    fi
+}
+
+enable_coredump() {
+    OLD_PATTERN=$(cat /proc/sys/kernel/core_pattern)
+    OLD_SOFT_LIMIT=$(ulimit -Sc)
+    OLD_HARD_LIMIT=$(ulimit -Hc)
+    sudo bash -c "echo '$LOGSDIR/core.%e.%p.%t' > /proc/sys/kernel/core_pattern"
+    if [[ "$OLD_SOFT_LIMIT" == "0" || "$OLD_HARD_LIMIT" == "0" ]]; then
+        ulimit -Hc unlimited
+        ulimit -Sc unlimited
+    fi
+}
+
+restore_coredump() {
+    if [[ $ENABLE_CORE_DUMP == true ]]; then
+        sudo bash -c "echo '$OLD_PATTERN' > /proc/sys/kernel/core_pattern"
+        ulimit -Sc "$OLD_SOFT_LIMIT"
+        ulimit -Hc "$OLD_HARD_LIMIT"
+        find "$LOGSDIR" -maxdepth 1 -name 'core*' -exec sudo chmod 644 {} +
+    fi
+}
+
+collect_dmesg()
+{
+    if [[ ! -z $DMESG_OFFSET && ! -z $LOG_DMESG ]]; then
+        dmesg | awk -v line="$DMESG_OFFSET" 'NR>line' > $LOG_DMESG
+    fi
+}
+
+trap reporterror ERR
+trap 'unblacklist; restore_coredump' EXIT
+
+FLAVOR="onediagfield"
+DGX_VERSION="r8.487"
+export DGX_VERSION
+
+TRACE_FILE_PATH=""
+export TRACE_FILE_PATH
+
+main "$@"
+exit 0

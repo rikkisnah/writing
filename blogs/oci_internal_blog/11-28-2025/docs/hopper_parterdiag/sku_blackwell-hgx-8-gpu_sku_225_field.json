@@ -1,0 +1,608 @@
+{
+    "format": "0.1",
+    "filters": [
+        ""
+    ],
+    "types": [
+        "",
+        "FRU",
+        "GPU"
+    ],
+    "valuetypes": [
+        "boolean",
+        "integer",
+        "string",
+        "versiondec",
+        "versionhex"
+    ],
+    "matchtypes": [
+        "exact",
+        "min",
+        "regex"
+    ],
+    "objects": [
+        {
+            "filter": "",
+            "type": "",
+            "id": "",
+            "description": "",
+            "attributes": [
+                {
+                    "key": "GPUNum",
+                    "valuetype": "integer",
+                    "matchtype": "exact",
+                    "value": "8",
+                    "validateRegex": ".*"
+                }
+            ]
+        },
+        {
+            "filter": "",
+            "type": "MFT",
+            "id": "",
+            "description": "",
+            "attributes": [
+                {
+                    "tag": "0.9",
+                    "key": "version",
+                    "matchtype": null,
+                    "valuetype": "string",
+                    "value": "4.29.0-540",
+                    "validateRegex": ".*"
+                },
+                {
+                    "tag": "1.0",
+                    "key": "version",
+                    "matchtype": null,
+                    "valuetype": "string",
+                    "value": "4.30.1-508",
+                    "validateRegex": ".*"
+                },
+                {
+                    "tag": "1.1",
+                    "key": "version",
+                    "matchtype": null,
+                    "valuetype": "string",
+                    "value": "4.30.1-510",
+                    "validateRegex": ".*"
+                },
+                {
+                    "tag": "1.2",
+                    "key": "version",
+                    "matchtype": null,
+                    "valuetype": "string",
+                    "value": "4.30.1-510",
+                    "validateRegex": ".*"
+                },
+                {
+                    "tag": "1.3.0,1.3-dev",
+                    "key": "version",
+                    "matchtype": null,
+                    "valuetype": "string",
+                    "value": "4.33.0-3004",
+                    "validateRegex": ".*"
+                },
+                {
+                    "tag": "1.3.1,1.3-full",
+                    "key": "version",
+                    "matchtype": null,
+                    "valuetype": "string",
+                    "value": "4.33.0-3004",
+                    "validateRegex": ".*"
+                }
+            ]
+        },
+        {
+            "filter": "",
+            "type": "QM3",
+            "id": "",
+            "description": "",
+            "attributes": [
+                {
+                    "tag": "0.9",
+                    "key": "FW_Version",
+                    "matchtype": null,
+                    "valuetype": "string",
+                    "value": "35.2014.1638",
+                    "validateRegex": ".*"
+                },
+                {
+                    "tag": "1.0",
+                    "key": "FW_Version",
+                    "matchtype": null,
+                    "valuetype": "string",
+                    "value": "35.2014.1654",
+                    "validateRegex": ".*"
+                },
+                {
+                    "tag": "1.1",
+                    "key": "FW_Version",
+                    "matchtype": null,
+                    "valuetype": "string",
+                    "value": "35.2014.1680",
+                    "validateRegex": ".*"
+                },
+                {
+                    "tag": "1.2",
+                    "key": "FW_Version",
+                    "matchtype": null,
+                    "valuetype": "string",
+                    "value": "35.2014.4668",
+                    "validateRegex": ".*"
+                },
+                {
+                    "tag": "1.3.0,1.3-dev",
+                    "key": "FW_Version",
+                    "matchtype": null,
+                    "valuetype": "string",
+                    "value": "35.2014.4716",
+                    "validateRegex": ".*"
+                },
+                {
+                    "tag": "1.3.1,1.3-full",
+                    "key": "FW_Version",
+                    "matchtype": null,
+                    "valuetype": "string",
+                    "value": "35.2014.4716",
+                    "validateRegex": ".*"
+                }
+            ]
+        },
+        {
+            "filter": "",
+            "type": "CX-7",
+            "id": "",
+            "description": "",
+            "attributes": [
+                {
+                    "tag": "0.9",
+                    "key": "FW_Version",
+                    "matchtype": null,
+                    "valuetype": "string",
+                    "value": "28.42.1274",
+                    "validateRegex": ".*"
+                },
+                {
+                    "tag": "1.0",
+                    "key": "FW_Version",
+                    "matchtype": null,
+                    "valuetype": "string",
+                    "value": "28.42.1280",
+                    "validateRegex": ".*"
+                },
+                {
+                    "tag": "1.1",
+                    "key": "FW_Version",
+                    "matchtype": null,
+                    "valuetype": "string",
+                    "value": "28.42.1282",
+                    "validateRegex": ".*"
+                },
+                {
+                    "tag": "1.2",
+                    "key": "FW_Version",
+                    "matchtype": null,
+                    "valuetype": "string",
+                    "value": "28.45.1020",
+                    "validateRegex": ".*"
+                },
+                {
+                    "tag": "1.3.0,1.3-dev",
+                    "key": "FW_Version",
+                    "matchtype": null,
+                    "valuetype": "string",
+                    "value": "28.46.5006",
+                    "validateRegex": ".*"
+                },
+                {
+                    "tag": "1.3.1,1.3-full",
+                    "key": "FW_Version",
+                    "matchtype": null,
+                    "valuetype": "string",
+                    "value": "28.46.5020",
+                    "validateRegex": ".*"
+                }
+            ]
+        },
+        {
+            "filter": "",
+            "type": "GPU",
+            "id": "",
+            "description": "",
+            "attributes": [
+                {
+                    "tag": "0.9",
+                    "key": "VBIOS_version",
+                    "matchtype": null,
+                    "valuetype": "string",
+                    "value": "97.00.7F.*.*",
+                    "validateRegex": ".*"
+                },
+                {
+                    "tag": "1.0",
+                    "key": "VBIOS_version",
+                    "matchtype": null,
+                    "valuetype": "string",
+                    "value": "97.00.88.*.*",
+                    "validateRegex": ".*"
+                },
+                {
+                    "tag": "1.1",
+                    "key": "VBIOS_version",
+                    "matchtype": null,
+                    "valuetype": "string",
+                    "value": "97.00.9A.*.*",
+                    "validateRegex": ".*"
+                },
+                {
+                    "tag": "1.2",
+                    "key": "VBIOS_version",
+                    "matchtype": null,
+                    "valuetype": "string",
+                    "value": "97.00.C5.*.*",
+                    "validateRegex": ".*"
+                },
+                {
+                    "tag": "1.3.0,1.3-dev",
+                    "key": "VBIOS_version",
+                    "matchtype": null,
+                    "valuetype": "string",
+                    "value": "97.00.D9.*.*",
+                    "validateRegex": ".*"
+                },
+                {
+                    "tag": "1.3.1,1.3-full",
+                    "key": "VBIOS_version",
+                    "matchtype": null,
+                    "valuetype": "string",
+                    "value": "97.00.D9.*.*",
+                    "validateRegex": ".*"
+                }
+            ]
+        },
+        {
+            "filter": "",
+            "type": "GPU",
+            "id": "SXM1",
+            "description": "",
+            "attributes": [
+                {
+                    "key": "VBIOS_version",
+                    "valuetype": "string",
+                    "matchtype": "regex",
+                    "value": ".*",
+                    "validateRegex": ".*"
+                },
+                {
+                    "key": "VendorID",
+                    "valuetype": "string",
+                    "matchtype": "exact",
+                    "value": "10de",
+                    "validateRegex": ".*"
+                },
+                {
+                    "key": "DeviceID",
+                    "valuetype": "string",
+                    "matchtype": "exact",
+                    "value": "2901",
+                    "validateRegex": ".*"
+                },
+                {
+                    "key": "SSVendorID",
+                    "valuetype": "string",
+                    "matchtype": "exact",
+                    "value": "10de",
+                    "validateRegex": ".*"
+                },
+                {
+                    "key": "SSDeviceID",
+                    "valuetype": "string",
+                    "matchtype": "exact",
+                    "value": "199b",
+                    "validateRegex": ".*"
+                }
+            ]
+        },
+        {
+            "filter": "",
+            "type": "GPU",
+            "id": "SXM2",
+            "description": "",
+            "attributes": [
+                {
+                    "key": "VBIOS_version",
+                    "valuetype": "string",
+                    "matchtype": "regex",
+                    "value": ".*",
+                    "validateRegex": ".*"
+                },
+                {
+                    "key": "VendorID",
+                    "valuetype": "string",
+                    "matchtype": "exact",
+                    "value": "10de",
+                    "validateRegex": ".*"
+                },
+                {
+                    "key": "DeviceID",
+                    "valuetype": "string",
+                    "matchtype": "exact",
+                    "value": "2901",
+                    "validateRegex": ".*"
+                },
+                {
+                    "key": "SSVendorID",
+                    "valuetype": "string",
+                    "matchtype": "exact",
+                    "value": "10de",
+                    "validateRegex": ".*"
+                },
+                {
+                    "key": "SSDeviceID",
+                    "valuetype": "string",
+                    "matchtype": "exact",
+                    "value": "199b",
+                    "validateRegex": ".*"
+                }
+            ]
+        },
+        {
+            "filter": "",
+            "type": "GPU",
+            "id": "SXM3",
+            "description": "",
+            "attributes": [
+                {
+                    "key": "VBIOS_version",
+                    "valuetype": "string",
+                    "matchtype": "regex",
+                    "value": ".*",
+                    "validateRegex": ".*"
+                },
+                {
+                    "key": "VendorID",
+                    "valuetype": "string",
+                    "matchtype": "exact",
+                    "value": "10de",
+                    "validateRegex": ".*"
+                },
+                {
+                    "key": "DeviceID",
+                    "valuetype": "string",
+                    "matchtype": "exact",
+                    "value": "2901",
+                    "validateRegex": ".*"
+                },
+                {
+                    "key": "SSVendorID",
+                    "valuetype": "string",
+                    "matchtype": "exact",
+                    "value": "10de",
+                    "validateRegex": ".*"
+                },
+                {
+                    "key": "SSDeviceID",
+                    "valuetype": "string",
+                    "matchtype": "exact",
+                    "value": "199b",
+                    "validateRegex": ".*"
+                }
+            ]
+        },
+        {
+            "filter": "",
+            "type": "GPU",
+            "id": "SXM4",
+            "description": "",
+            "attributes": [
+                {
+                    "key": "VBIOS_version",
+                    "valuetype": "string",
+                    "matchtype": "regex",
+                    "value": ".*",
+                    "validateRegex": ".*"
+                },
+                {
+                    "key": "VendorID",
+                    "valuetype": "string",
+                    "matchtype": "exact",
+                    "value": "10de",
+                    "validateRegex": ".*"
+                },
+                {
+                    "key": "DeviceID",
+                    "valuetype": "string",
+                    "matchtype": "exact",
+                    "value": "2901",
+                    "validateRegex": ".*"
+                },
+                {
+                    "key": "SSVendorID",
+                    "valuetype": "string",
+                    "matchtype": "exact",
+                    "value": "10de",
+                    "validateRegex": ".*"
+                },
+                {
+                    "key": "SSDeviceID",
+                    "valuetype": "string",
+                    "matchtype": "exact",
+                    "value": "199b",
+                    "validateRegex": ".*"
+                }
+            ]
+        },
+        {
+            "filter": "",
+            "type": "GPU",
+            "id": "SXM5",
+            "description": "",
+            "attributes": [
+                {
+                    "key": "VBIOS_version",
+                    "valuetype": "string",
+                    "matchtype": "regex",
+                    "value": ".*",
+                    "validateRegex": ".*"
+                },
+                {
+                    "key": "VendorID",
+                    "valuetype": "string",
+                    "matchtype": "exact",
+                    "value": "10de",
+                    "validateRegex": ".*"
+                },
+                {
+                    "key": "DeviceID",
+                    "valuetype": "string",
+                    "matchtype": "exact",
+                    "value": "2901",
+                    "validateRegex": ".*"
+                },
+                {
+                    "key": "SSVendorID",
+                    "valuetype": "string",
+                    "matchtype": "exact",
+                    "value": "10de",
+                    "validateRegex": ".*"
+                },
+                {
+                    "key": "SSDeviceID",
+                    "valuetype": "string",
+                    "matchtype": "exact",
+                    "value": "199b",
+                    "validateRegex": ".*"
+                }
+            ]
+        },
+        {
+            "filter": "",
+            "type": "GPU",
+            "id": "SXM6",
+            "description": "",
+            "attributes": [
+                {
+                    "key": "VBIOS_version",
+                    "valuetype": "string",
+                    "matchtype": "regex",
+                    "value": ".*",
+                    "validateRegex": ".*"
+                },
+                {
+                    "key": "VendorID",
+                    "valuetype": "string",
+                    "matchtype": "exact",
+                    "value": "10de",
+                    "validateRegex": ".*"
+                },
+                {
+                    "key": "DeviceID",
+                    "valuetype": "string",
+                    "matchtype": "exact",
+                    "value": "2901",
+                    "validateRegex": ".*"
+                },
+                {
+                    "key": "SSVendorID",
+                    "valuetype": "string",
+                    "matchtype": "exact",
+                    "value": "10de",
+                    "validateRegex": ".*"
+                },
+                {
+                    "key": "SSDeviceID",
+                    "valuetype": "string",
+                    "matchtype": "exact",
+                    "value": "199b",
+                    "validateRegex": ".*"
+                }
+            ]
+        },
+        {
+            "filter": "",
+            "type": "GPU",
+            "id": "SXM7",
+            "description": "",
+            "attributes": [
+                {
+                    "key": "VBIOS_version",
+                    "valuetype": "string",
+                    "matchtype": "regex",
+                    "value": ".*",
+                    "validateRegex": ".*"
+                },
+                {
+                    "key": "VendorID",
+                    "valuetype": "string",
+                    "matchtype": "exact",
+                    "value": "10de",
+                    "validateRegex": ".*"
+                },
+                {
+                    "key": "DeviceID",
+                    "valuetype": "string",
+                    "matchtype": "exact",
+                    "value": "2901",
+                    "validateRegex": ".*"
+                },
+                {
+                    "key": "SSVendorID",
+                    "valuetype": "string",
+                    "matchtype": "exact",
+                    "value": "10de",
+                    "validateRegex": ".*"
+                },
+                {
+                    "key": "SSDeviceID",
+                    "valuetype": "string",
+                    "matchtype": "exact",
+                    "value": "199b",
+                    "validateRegex": ".*"
+                }
+            ]
+        },
+        {
+            "filter": "",
+            "type": "GPU",
+            "id": "SXM8",
+            "description": "",
+            "attributes": [
+                {
+                    "key": "VBIOS_version",
+                    "valuetype": "string",
+                    "matchtype": "regex",
+                    "value": ".*",
+                    "validateRegex": ".*"
+                },
+                {
+                    "key": "VendorID",
+                    "valuetype": "string",
+                    "matchtype": "exact",
+                    "value": "10de",
+                    "validateRegex": ".*"
+                },
+                {
+                    "key": "DeviceID",
+                    "valuetype": "string",
+                    "matchtype": "exact",
+                    "value": "2901",
+                    "validateRegex": ".*"
+                },
+                {
+                    "key": "SSVendorID",
+                    "valuetype": "string",
+                    "matchtype": "exact",
+                    "value": "10de",
+                    "validateRegex": ".*"
+                },
+                {
+                    "key": "SSDeviceID",
+                    "valuetype": "string",
+                    "matchtype": "exact",
+                    "value": "199b",
+                    "validateRegex": ".*"
+                }
+            ]
+        }
+    ]
+}

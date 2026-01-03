@@ -1,0 +1,91 @@
+Which Mauritius laws and regulations should the
+compliance plan reference
+A Mauritius AI compliance plan should directly reference several core laws, regulations, and
+official guidelines that form the foundation for legal and ethical use of AI in the country as of
+2025.
+
+Essential Laws and Regulations
+    Data Protection Act 2017 (DPA 2017):
+        Modeled on the EU GDPR, this law covers all processing of personal data, mandates
+        registration for controllers/processors, requires Data Protection Officer (DPO)
+        appointment in many cases, and enforces data security, privacy by design, and impact
+        assessments for risky processing.
+        There are strict incident notification requirements (report within 72 hours), contractual
+        duties for data processors, and clear cross-border transfer obligations. [1] [2] [3] [4]
+    Financial Services (Robotic and Artificial Intelligence Enabled Advisory Services) Rules
+    2021 (“FSC AI Rules”):
+        Issued by the Financial Services Commission (FSC), these rules govern AI-driven
+        advisory services (especially in finance), setting standards for transparency, human
+        oversight, auditability, governance, and FSC audit rights of AI-driven decision systems.
+        All providers of AI-enabled investment or portfolio management services must comply
+        with these rules. [5] [6] [7] [8]
+    Mauritius Artificial Intelligence Strategy (2018; part of Digital Mauritius 2030):
+        This strategic policy document, developed by the Ministry of Information Technology,
+        Communication & Innovation, outlines core principles for AI deployment (ethics, data
+        privacy, governance, sector-specific guidance) and proposes bodies like the Mauritius
+        Emerging Technologies Council (METC). [9] [10] [11]
+    Specific Guidelines and Sectoral Policies:
+        Guidelines from the Data Protection Office, including the latest (2024) sector guides for
+        data controllers/processors.
+        Higher Education Commission’s 2025 “Guidelines on the Use of AI in Higher Education,”
+        addressing transparency, accountability, and bias in institutional AI use. [12]
+    Recent Tax Legislation:
+        Finance (Miscellaneous Provisions) Act 2024, which introduced new tax incentives and
+        exemptions for firms investing in AI and related intellectual property. [13]
+Key References for the Compliance Plan
+            Area                                  Law / Regulation / Guideline                           Citation
+
+   Data privacy & security   Data Protection Act 2017 (DPA 2017)                                         [1] [4]
+
+
+   AI financial services     FSC AI Rules 2021                                                           [5] [7] [8]
+
+
+   Overall AI principles     Mauritius Artificial Intelligence Strategy (2018, Digital Mauritius 2030)   [9] [10] [11]
+
+
+   Sector compliance         DPO data processing guides, Higher Education AI Guidelines                  [3] [12]
+
+
+   Tax incentives            Finance (Miscellaneous Provisions) Act 2024                                 [13]
+
+
+
+These referenced laws and rules should be directly cited and their obligations built into the
+compliance lifecycle: policy design, risk assessment, model documentation, user training, and
+continuous monitoring. Mauritius may continue to enhance the DPA or issue more sectoral AI
+rules, so ongoing regulatory monitoring is also essential. [2] [5] [13]
+                                                        ⁂
+
+ 1. https://www.dlapiperdataprotection.com/?t=law&c=MU
+ 2. https://www.globallegalpost.com/news/data-protection-and-the-business-process-outsourcing-sector-i
+    n-mauritius-1715111622
+ 3. https://blog.africadataprotection.org/en/2024/01/31/mauritius-the-protection-of-personal-data-in-the-fi
+    nancial-sector-the-subject-of-a-guide-published-by-the-data-protection-office-dpo/
+ 4. https://caseguard.com/articles/privacy-legislation-and-personal-data-law-in-mauritius/
+ 5. https://www.orisonlegal.com/ai-legislation-for-mauritius/
+ 6. https://www.sovereigngroup.com/mauritius/corporate-services/special-licences-in-mauritius/robotic-an
+    d-artificial-intelligence-enabled-advisory-services-licence/
+ 7. https://www.fscmauritius.org/media/101852/annex-1-128_the-financial-services-robotic-and-artificial-in
+    telligence-enabled-advisory-services-rules-2021.pdf
+ 8. https://www.fscmauritius.org/media/115770/faqs-robotic-and-ai-enabled-advisory-services.pdf
+ 9. https://www.nucamp.co/blog/coding-bootcamp-mauritius-mus-legal-the-complete-guide-to-using-ai-
+    as-a-legal-professional-in-mauritius-in-2025
+10. https://www.dentons.com/en/insights/articles/2025/january/10/ai-trends-for-2025-ai-regulation-governa
+    nce-and-ethics
+11. https://www.legal500.com/developments/thought-leadership/ai-regulation-and-policy-in-africa/
+12. The-Race-for-AI-Leadership_MF_Article.pdf
+13. https://investmentpolicy.unctad.org/investment-policy-monitor/measures/4961/mauritius-expands-tax-i
+    ncentives-for-ai-ip-and-virtual-assets
+14. https://www.nucamp.co/blog/coding-bootcamp-mauritius-mus-legal-will-ai-replace-legal-jobs-in-mau
+    ritius-heres-what-to-do-in-2025
+15. https://iapp.org/resources/article/global-ai-legislation-tracker/
+16. https://edbmauritius.org/newsroom/budget-2025-2026-artificial-intelligence
+17. https://www.nucamp.co/blog/coding-bootcamp-mauritius-mus-financial-services-how-ai-is-helping-fi
+    nancial-services-companies-in-mauritius-cut-costs-and-improve-efficiency
+18. https://platformafrica.com/2025/06/12/why-the-eus-artificial-intelligence-law-matters-for-mauritius/
+19. https://paradigmhq.org/report/research-on-ai-laws-policies-and-strategies-in-east-africa-zambia-and
+    -mauritius/
+20. https://www.dataguidance.com/jurisdictions/mauritius
+21. https://facephi.com/en/data-protection-artificial-intelligence-europe/
+

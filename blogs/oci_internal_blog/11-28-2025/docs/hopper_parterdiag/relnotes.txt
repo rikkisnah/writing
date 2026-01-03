@@ -1,0 +1,180 @@
+================================================================================
+                         HGX B200 8 GPU RELEASE NOTES
+================================================================================
+
+Partner Diag Version: 629-26287-0105-FLD-50761
+Date 11/13/2025
+
+* Validated with the 1.3.00 GA FW/SW
+
+Bug fixes: 
+
+* Improved inventory test to not fail the test on DOCA-OFED version check
+* Enhancements in ibstressmad testFixed the issue where auto configuration fails if there are more then seven CX-7 devices on system
+
+Known  Issues:
+
+--------------------------------------------------------------------------------
+Partner Diag Version: 629-26287-0104-FLD-50593
+Date 10/13/2025
+
+* Validated with the 1.3.00 Dev Drop FW/SW
+* Enhanced PCIe error logs for more details
+* Enhanced error messaging for TDM and missing DOCA 
+
+Bug fixes: 
+
+* Fixed the issue where auto configuration fails if there are more then seven CX-7 devices on system
+* Fixed the timeout issue with ibstressmad test 
+* Removed GL related dependencies in nvidia_bug_report.sh that caused ambiguous warning messages
+
+Known  Issues:
+
+--------------------------------------------------------------------------------
+Partner Diag Version: 629-26287-0103-FLD-43576.1
+Date 09/16/2025
+
+Bug fixes: 
+
+* Fixed the NVRM generic error issue with the thermal test
+
+Known  Issues:
+
+* Diag may print the following warning, but it does not impact the functionality. Safe to ignore.
+	Dependency Management Tool found some packages are missing in the system: ['32/glvnd_check', 'nvidia/glvnd_check', 'nvidia-settings', 'nvidia-smi'] 
+--------------------------------------------------------------------------------
+
+Partner Diag Version: 629-26287-0102-FLD-43576
+Date 08/06/2025
+
+* Added Auto-configuration feature for infiniband_ca_name and test related to CX-7 IB devices
+* Added version checking for SW/library components prior to running the tests
+* Added automatic repair support to the diagnostics
+
+Bug fixes: 
+
+* Fixed the ibstressmad test timeout issue
+
+Known  Issues:
+
+* Diag may print the following warning, but it does not impact the functionality. Safe to ignore.
+	Dependency Management Tool found some packages are missing in the system: ['32/glvnd_check', 'nvidia/glvnd_check', 'nvidia-settings', 'nvidia-smi'] 
+--------------------------------------------------------------------------------
+
+Partner Diag Version: 629-26287-0001-FLD-42704
+Date 05/05/2025
+
+* Added support for IB devices in ethernet mode for ExtIBConnectivity and ExtIBStress tests
+* Added IST repair
+* Improved IST test time [IOMMU enabled: ~15 minutes; IOMMU disabled: ~25 minutes]
+* Improved the connectivity test
+* Note: To run the connectivity test on the HGX B200 8-GPU baseboard's CX-7, specify that particular CX-7's InfiniBand name in the spec file.
+
+Bug fixes: 
+
+* Fixed the issue where TDM fails
+* Fixed the intermittent issue where IST OOB PRC knob setting fail
+
+
+Known  Issues:
+
+* TDM may fail to run on systems with GLIBC < 2.28
+* Diag may print the following message on a test failure:
+  o General Error—A catch-all exit code for a variety of general errors. Often used whenthe command or program encounters an error, but no specific exit code is available for the situation.
+--------------------------------------------------------------------------------
+
+Partner Diag Version: 629-26287-0001-FLD-42405
+Date 03/06/2025
+
+* Added full IST test coverage 
+* Added support to run specific IST tests (Logic, SRAM, DRAM, or all)
+* Optimize the runtime of partner mfg diagnostics 
+* Note: To run the connectivity test on the HGX B200 8-GPU baseboard's CX-7, specify that particular CX-7's InfiniBand name in the spec file.
+
+Bug fixes: 
+
+* Fixed the issue where the partner diag checks for the dependencies of a skipped test
+* Fixed the issue where the thermal test had an inconsistent behavior
+* Fixed the issue where GPU Serial Numbers were missing in the Diagnostics summary table 
+
+Known Issues: 
+
+* IST tests take longer if IOMMU isn’t enabled 
+
+--------------------------------------------------------------------------------
+Partner Diag Version: 629-26287-XXXX-FLD-42196
+Date 02/06/2025
+
+* Added support for Firmware v0.9.00 
+* Supports QS/PS/MP SKUs
+
+--------------------------------------------------------------------------------
+Partner Diag Version:  629-26287-XXXX-FLD-41872
+Date 01/08/2025
+
+* Added support for PS Hardware
+* Added support for Firmware v0.8.00 Update 2 QA Drop
+* Supports both Air-cooled and Parnter-cooled SKUs
+
+--------------------------------------------------------------------------------
+Partner Diag Version:  629-26287-XXXX-FLD-41581
+Date 12/05/2024
+
+* Fix FM issue if no FM installed on the system 
+
+--------------------------------------------------------------------------------
+Partner Diag Version:  629-26287-XXXX-FLD-41318
+Date 11/13/2024
+
+* Fix for the NVRM Generic Falcon intermittent error
+* Addressed the intermittent error for ibstressmad test 
+* Enable NvLink EOM tests
+* Add BF3 and CX-7 coverage for externally connected devices 
+* Remove VBIOS version check from inventory test 
+* Updated the FM version to prevent NVLink test timeout 
+
+--------------------------------------------------------------------------------
+Partner Diag Version:  629-26287-XXXX-FLD-41229
+Date 11/7/2024
+
+* Fix for the NVRM Generic Falcon intermittent error 
+* Addressed the intermittent error for ibstressmad test 
+* Enable NvLink EOM tests 
+* Add BF3 and CX-7 coverage for externally connected devices 
+* Remove VBIOS version check from inventory test 
+
+--------------------------------------------------------------------------------
+Partner Diag Version:  629-26287-XXXX-FLD-41228
+Date 11/1/2024
+
+* Fix for the GPU generic falcon error
+* Addressed the intermittent error for ibstressmad test
+* Enable EOM tests
+* Improve threshold for FOM tests
+
+--------------------------------------------------------------------------------
+Partner Diag Version: xxxxx
+Date 10/11/2024
+
+* Removed --sit as --mfg has been introduced, which provides the same test coverage.
+* Skipped EOM tests in nvlink and connectivity test due to known firmware issues.
+* Lowered FOM test threshold in eyegrade test due to known firmware limitations.
+* Using SXM ids instead of PCIE addresses.
+
+--------------------------------------------------------------------------------
+Partner Diag Version: xxxxx
+Date 9/20/2024
+
+* Umbriel hot fix release
+
+--------------------------------------------------------------------------------
+Partner Diag Version: xxxxx
+Date 9/11/2024
+
+* Support partner RMA field diags for QS
+
+--------------------------------------------------------------------------------
+Partner Diag Version: xxxxx
+Date 7/17/2024
+
+* Initial partner mfg diag release for ES

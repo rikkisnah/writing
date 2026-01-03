@@ -1,0 +1,118 @@
+The Memory Bottleneck in AI
+
+AI workloads are no longer compute-bound—they are memory-bound.
+
+GPU HBM3: 80–192GB, 3.3–4.8TB/s bandwidth, ~300ns latency, ~$150–200/GB
+
+CPU DDR5 DRAM: up to 8TB, 200–400GB/s bandwidth, ~80–100ns local latency, ~$5–10/GB
+
+A Llama-3 405B model needs ~810GB in FP16 precision. This exceeds any single GPU’s HBM, forcing inefficient multi-GPU sharding.
+
+The Current CPU–GPU Shuffle
+
+Today’s AI workloads juggle:
+
+Model weights in GPU HBM
+
+Activations moving between CPU and GPU
+
+KV cache hogging GPU memory
+
+CPU DRAM mostly idle
+
+Result: GPUs stall, compute units idle, memory wall grows.
+
+Enfabrica’s Fabric Innovation
+
+Enfabrica’s Accelerated Compute Fabric SuperNIC (ACF-S) uses CXL-over-Ethernet to unify memory - :
+
+Extends CXL beyond the server boundary
+
+Allows GPUs to access CPU DRAM pools directly
+
+Brings remote DRAM latency down to ~5–10µs
+
+The New Memory Hierarchy
+
+L1/L2 cache – nanoseconds
+
+GPU HBM – sub-µs
+
+Local CPU DRAM – µs
+
+Remote CPU DRAM (via Enfabrica) – 5–10µs
+
+SSD/storage – ms
+
+Economics Before vs After Enfabrica
+
+Before Enfabrica:
+
+8x H100 = $320K
+
+640GB HBM = $128K
+
+2TB CPU DRAM = $20K (underutilized)
+
+~40% memory efficiency
+
+With Enfabrica:
+
+4x H100 = $160K
+
+320GB HBM + 4TB CPU DRAM fully used
+
+~85% memory efficiency
+
+~50% hardware cost savings
+
+How It Works: Memory Tiering
+
+Attention heads → GPU HBM
+
+Feed-forward layers → local CPU DRAM
+
+Embeddings → remote CPU DRAM
+
+KV cache → flows dynamically across tiers
+
+Features: hardware coherency, RDMA-style access, predictive prefetching, QoS guarantees.
+
+CPU’s New Role
+
+CPUs shift from compute to memory orchestration:
+
+Managing DRAM pools up to 100TB per rack
+
+Compression/decompression
+
+Memory encryption and policy enforcement
+
+Industry Impact
+
+Winners:
+
+NVIDIA: controls compute, HBM, fabric, DRAM integration
+
+Hyperscalers: cut inference cost by ~50%
+
+Startups: run large models with fewer GPUs
+
+Pressured:
+
+AMD: must evolve Infinity Fabric
+
+Intel: loses CXL edge without fabric play
+
+Pure GPU vendors: no integrated memory vision
+
+Bottom Line
+
+This is not just about GPUs—it is about unified memory architecture.
+NVIDIA is now selling the nervous system of AI infrastructure, not just chips.
+
+The $900M Enfabrica buy isn’t an acquisition—it’s NVIDIA buying the keys to the next decade of AI memory
+
+----
+
+

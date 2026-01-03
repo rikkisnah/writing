@@ -1,0 +1,199 @@
+{
+    "global_args": {
+        "DiagType": "partner_mfg",
+        "DiagInfo": {
+            "DiagName": "GB200-NVL L11 Partner Manufacturing Diag",
+            "RunLevel": ""
+        },
+        "cluster_cfg": {
+            "cluster_type": "GB200_NVL_2_4_36x1",
+            "gdm_port": 8765,
+            "imex_port_num": 5080,
+            "imex_ctrl_srv_port_num": 1020,
+            "l1_domain_id": 8193,
+            "l2_domain_id": 16384,
+            "node_address_config": "MNNVL_NODE_ADDRESS_CONFIG",
+            "cluster_node_logins": {
+                "compute_node": {
+                    "user": "nvidia",
+                    "passwd": "nvidia"
+                },
+                "switch_node": {
+                    "user": "admin",
+                    "passwd": "nvidia"
+                },
+                "inter_switch_node": {
+                    "user": "root",
+                    "passwd": "root"
+                }
+            },
+            "hosts": {
+                "10.114.248.6": {
+                    "node_type": "compute_node",
+                    "host_id": "COMPUTE_NODE_0",
+                    "rack_slot": 1,
+                    "tray_id" : 0,
+                    "bmc_ip_address" : "10.114.247.6"
+                },
+                "10.114.248.7": {
+                    "node_type": "compute_node",
+                    "host_id": "COMPUTE_NODE_1",
+                    "rack_slot": 2,
+                    "tray_id" : 1,
+                    "bmc_ip_address" : "10.114.247.7"
+                },
+                "10.114.248.8": {
+                    "node_type": "compute_node",
+                    "host_id": "COMPUTE_NODE_2",
+                    "rack_slot": 3,
+                    "tray_id" : 2,
+                    "bmc_ip_address" : "10.114.247.8"
+                },
+                "10.114.248.9": {
+                    "node_type": "compute_node",
+                    "host_id": "COMPUTE_NODE_3",
+                    "rack_slot": 4,
+                    "tray_id" : 3,
+                    "bmc_ip_address" : "10.114.247.9"
+                },
+                "10.114.248.10": {
+                    "node_type": "compute_node",
+                    "host_id": "COMPUTE_NODE_4",
+                    "rack_slot": 14,
+                    "tray_id" : 4,
+                    "bmc_ip_address" : "10.114.247.10"
+                },
+                "10.114.248.11": {
+                    "node_type": "compute_node",
+                    "host_id": "COMPUTE_NODE_5",
+                    "rack_slot": 15,
+                    "tray_id" : 5,
+                    "bmc_ip_address" : "10.114.247.11"
+                },
+                "10.114.248.12": {
+                    "node_type": "compute_node",
+                    "host_id": "COMPUTE_NODE_6",
+                    "rack_slot": 16,
+                    "tray_id" : 6,
+                    "bmc_ip_address" : "10.114.247.12"
+                },
+                "10.114.248.13": {
+                    "node_type": "compute_node",
+                    "host_id": "COMPUTE_NODE_7",
+                    "rack_slot": 17,
+                    "tray_id" : 7,
+                    "bmc_ip_address" : "10.114.247.13"
+                },
+                "10.114.248.14": {
+                    "node_type": "compute_node",
+                    "host_id": "COMPUTE_NODE_8",
+                    "rack_slot": 18,
+                    "tray_id" : 8,
+                    "bmc_ip_address" : "10.114.247.14"
+                },
+                "10.114.248.101": {
+                    "node_type": "switch_node",
+                    "host_id": "SWITCH_NODE_0",
+                    "rack_slot": 5,
+                    "tray_id" : 0
+                },
+                "10.114.248.102": {
+                    "node_type": "switch_node",
+                    "host_id": "SWITCH_NODE_1",
+                    "rack_slot": 6,
+                    "tray_id" : 1
+                },
+                "10.114.248.103": {
+                    "node_type": "switch_node",
+                    "host_id": "SWITCH_NODE_2",
+                    "rack_slot": 7,
+                    "tray_id" : 2
+                },
+                "10.114.248.104": {
+                    "node_type": "switch_node",
+                    "host_id": "SWITCH_NODE_3",
+                    "rack_slot": 8,
+                    "tray_id" : 3
+                },
+                "10.114.248.105": {
+                    "node_type": "switch_node",
+                    "host_id": "SWITCH_NODE_4",
+                    "rack_slot": 9,
+                    "tray_id" : 4
+                },
+                "10.114.248.106": {
+                    "node_type": "switch_node",
+                    "host_id": "SWITCH_NODE_5",
+                    "rack_slot": 10,
+                    "tray_id" : 5
+                },
+                "10.114.248.107": {
+                    "node_type": "switch_node",
+                    "host_id": "SWITCH_NODE_6",
+                    "rack_slot": 11,
+                    "tray_id" : 6
+                },
+                "10.114.248.108": {
+                    "node_type": "switch_node",
+                    "host_id": "SWITCH_NODE_7",
+                    "rack_slot": 12,
+                    "tray_id" : 7
+                },
+                "10.114.248.109": {
+                    "node_type": "switch_node",
+                    "host_id": "SWITCH_NODE_8",
+                    "rack_slot": 13,
+                    "tray_id" : 8
+                }
+            }
+        },
+        "EnableDeviceVerify": false,
+        "enable_mods_gdm": false,
+        "enable_mods_fm": false,
+        "enable_gfm_in_gdm": false,
+        "enable_sm_fm_setup": false,
+        "fail_on_bad_nmxc": false,
+        "EnableMultinodeNvlinkTraffic": false,
+        "mods_execution_retry_count" : 5,
+        "use_python_requests_for_redfish": true,
+        "redfish_curl_connect_timeout": 5,
+        "bmc_redfish_credentials": {
+            "username": "root",
+            "password": "0penBmc"
+        },
+        "bmc_ssh_credentials": {
+            "username": "root",
+            "password": "0penBmc"
+        },
+        "mods_multiinstance_inter_launch_delay_sec": 2,
+        "product_config" : {
+            "C2CLinkMask" : "gb_c1_g2",
+            "rf_endpoints" : {
+                "CBC_Eeprom_list" : [
+                    "/redfish/v1/Chassis/CBC_0",
+                    "/redfish/v1/Chassis/CBC_1",
+                    "/redfish/v1/Chassis/CBC_2",
+                    "/redfish/v1/Chassis/CBC_3"
+                ]
+            }
+        }
+    },
+    "actions": [
+        {
+            "virtual_id": "CableCartridgeEepromCheck",
+            "args": {
+                "timeout_sec": 300,
+                "fields_to_exclude_check" : ["board_serial", "product_serial", "board_date"],
+                "use_redfish_for_compute" : true,
+                "fru_desc_regex_list" : ["^CBC_.*"],
+                "redfish_api_args" :
+                {
+                    "ishttps" : true,
+                    "curl_options" : "--silent --insecure --user root:0penBmc"
+                }
+            },
+            "action": "cable_cartridge"
+        }
+    ],
+    "version": "1"
+}
